@@ -1,0 +1,14 @@
+# Node
+node_modules/
+
+# Banco de dados local (nunca subir!)
+*.db
+*.sqlite
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TechGest - Sistema de Gestão</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="logo">
+      <h2>TechGest</h2>
+      <small>Sistema de Gestão</small>
+    </div>
+    <nav>
+      <button class="nav-item active" data-view="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="nav-item" data-view="clientes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Clientes</span>
+      </button>
+      <button class="nav-item" data-view="funcionarios">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Funcionários</span>
+      </button>
+      <button class="nav-item" data-view="produtos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        <span>Produtos</span>
+      </button>
+      <button class="nav-item" data-view="ordens">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        <span>OS</span>
+      </button>
+      <button class="nav-item" data-view="kanban">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="18" rx="1"/><rect x="10" y="3" width="6" height="12" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>
+        <span>Kanban</span>
+      </button>
+      <button class="nav-item" data-view="orcamentos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+        <span>Orçamentos</span>
+      </button>
+      <button class="nav-item" data-view="vendas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        <span>Vendas</span>
+      </button>
+      <button class="nav-item" data-view="estoque">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="8" height="9" rx="1"/><rect x="13" y="12" width="8" height="9" rx="1"/><rect x="8" y="3" width="8" height="7" rx="1"/></svg>
+        <span>Estoque</span>
+      </button>
+      <button class="nav-item" data-view="caixa">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        <span>Caixa</span>
+      </button>
+      <button class="nav-item" data-view="financeiro">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 12l3 3 5-5 4 4"/></svg>
+        <span>Financeiro</span>
+      </button>
+      <button class="nav-item" data-view="despesasFixas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2h16v20l-3-2-3 2-3-2-3 2-3-2z"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/></svg>
+        <span>Despesas Fixas</span>
+      </button>
+      <button class="nav-item" data-view="relatorios">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="3" y1="20" x2="21" y2="20"/></svg>
+        <span>Relatórios</span>
+      </button>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <header class="topbar">
+      <h1 id="page-title">Dashboard</h1>
+      <button class="btn-tema" id="btn-tema" title="Alternar tema">
+        <svg id="icone-tema" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+      </button>
+    </header>
+
+    <section class="view active" id="view-dashboard">
+      <h2 style="font-size:16px; margin-bottom:12px; color:var(--cor-texto-suave);">HOJE</h2>
+      <div class="cards-grid">
+        <div class="card lucro"><h3>Lucro Assistência (Hoje)</h3><p id="dash-assistencia">R$ 0,00</p></div>
+        <div class="card lucro"><h3>Lucro Vendas (Hoje)</h3><p id="dash-vendas">R$ 0,00</p></div>
+        <div class="card caixa"><h3>Lucro Total (Hoje)</h3><p id="dash-total-hoje">R$ 0,00</p></div>
+      </div>
+      <h2 style="font-size:16px; margin-bottom:12px; color:var(--cor-texto-suave);">VISÃO GERAL</h2>
+      <div class="cards-grid">
+        <div class="card"><h3>Clientes</h3><p id="kpi-clientes">0</p></div>
+        <div class="card"><h3>OS Abertas</h3><p id="kpi-ordens">0</p></div>
+        <div class="card"><h3>Total de Vendas</h3><p id="kpi-vendas">R$ 0,00</p></div>
+        <div class="card caixa"><h3>Saldo em Caixa</h3><p id="kpi-caixa">R$ 0,00</p></div>
+      </div>
+      <h2 style="margin-bottom:12px">Estoque Baixo</h2>
+      <div id="lista-estoque-baixo" class="lista"></div>
+    </section>
+
+    <section class="view" id="view-clientes">
+      <div class="form-box">
+        <h2 id="titulo-form-cliente">Novo Cliente</h2>
+        <form id="form-cliente">
+          <input type="hidden" id="cliente-id" />
+          <input placeholder="Nome" id="cliente-nome" required />
+          <input placeholder="Telefone" id="cliente-telefone" />
+          <input placeholder="E-mail" id="cliente-email" />
+          <input placeholder="CPF" id="cliente-cpf" />
+          <input placeholder="Endereço" id="cliente-endereco" />
+          <button type="submit">Salvar</button>
+          <button type="button" id="cancel-cliente" class="btn-secondary" style="display:none">Cancelar</button>
+        </form>
+      </div>
+      <table id="tabela-clientes">
+        <thead><tr><th>ID</th><th>Nome</th><th>Telefone</th><th>E-mail</th><th>Ações</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="view" id="view-funcionarios">
+      <div class="form-box">
+        <h2>Novo Funcionário</h2>
+        <form id="form-funcionario">
+          <input placeholder="Nome" id="funcionario-nome" required />
+          <input placeholder="Cargo" id="funcionario-cargo" />
+          <input placeholder="Telefone" id="funcionario-telefone" />
+          <button type="submit">Salvar</button>
+        </form>
+      </div>
+      <table id="tabela-funcionarios">
+        <thead><tr><th>ID</th><th>Nome</th><th>Cargo</th><th>Telefone</th><th>Ações</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="view" id="view-produtos">
+      <div class="form-box">
+        <h2>Novo Produto / Serviço</h2>
+        <form id="form-produto">
+          <input type="hidden" id="produto-id" />
+          <input placeholder="Nome" id="produto-nome" required />
+          <select id="produto-tipo">
+            <option value="produto">Produto</option>
+            <option value="servico">Serviço</option>
+          </select>
+          <input placeholder="Descrição" id="produto-descricao" />
+          <input type="number" step="0.01" placeholder="Preço" id="produto-preco" />
+          <input type="number" placeholder="Quantidade" id="produto-quantidade" />
+          <input type="number" placeholder="Estoque Mínimo" id="produto-minimo" />
+          <input placeholder="IMEI (se aparelho)" id="produto-imei" />
+          <input placeholder="Número de Série" id="produto-serie" />
+          <select id="produto-funcionario"></select>
+          <button type="submit">Salvar</button>
+          <button type="button" id="cancel-produto" class="btn-secondary" style="display:none">Cancelar</button>
+        </form>
+      </div>
+      <table id="tabela-produtos">
+        <thead><tr><th>ID</th><th>Nome</th><th>Tipo</th><th>Preço</th><th>Qtd</th><th>Funcionário</th><th>Ações</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="view" id="view-ordens">
+      <div class="form-box">
+        <h2>Nova OS</h2>
+        <form id="form-ordem">
+          <input type="hidden" id="ordem-id" />
+          <select id="ordem-cliente" required></select>
+          <select id="ordem-funcionario"></select>
+          <input placeholder="Aparelho" id="ordem-aparelho" />
+          <input placeholder="Marca" id="ordem-marca" />
+          <input placeholder="Modelo" id="ordem-modelo" />
+          <input placeholder="IMEI" id="ordem-imei" />
+          <input placeholder="Número de Série" id="ordem-serie" />
+          <textarea placeholder="Defeito relatado" id="ordem-defeito"></textarea>
+          <textarea placeholder="Serviço realizado" id="ordem-servico"></textarea>
+          <textarea placeholder="Peças utilizadas" id="ordem-pecas"></textarea>
+          <input type="number" step="0.01" placeholder="Valor" id="ordem-valor" />
+          <select id="ordem-status">
+            <option>Aberta</option>
+            <option>Em Análise</option>
+            <option>Aguardando Peça</option>
+            <option>Em Reparo</option>
+            <option>Pronto</option>
+            <option>Entregue</option>
+            <option>Cancelada</option>
+          </select>
+          <button type="submit">Salvar</button>
+          <button type="button" id="cancel-ordem" class="btn-secondary" style="display:none">Cancelar</button>
+        </form>
+      </div>
+      <table id="tabela-ordens">
+        <thead><tr><th>ID</th><th>Cliente</th><th>Aparelho</th><th>Funcionário</th><th>Status</th><th>Valor</th><th>Pago</th><th>Falta</th><th>Ações</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="view" id="view-kanban">
+      <p style="color:var(--cor-texto-suave); font-size:13px; margin-bottom:12px;">
+        Arraste os cards entre as colunas para mudar o status.
+      </p>
+      <div class="kanban-board" id="kanban-board"></div>
+    </section>
+
+    <section class="view" id="view-orcamentos">
+      <div class="form-box">
+        <h2>Novo Orçamento</h2>
+        <form id="form-orcamento">
+          <input type="hidden" id="orcamento-id" />
+          <select id="orcamento-cliente" required></select>
+          <input placeholder="Descrição" id="orcamento-descricao" />
+          <input type="number" step="0.01" placeholder="Valor Total" id="orcamento-valor" />
+          <select id="orcamento-status">
+            <option>Pendente</option>
+            <option>Aprovado</option>
+            <option>Recusado</option>
+          </select>
+          <button type="submit">Salvar</button>
+          <button type="button" id="cancel-orcamento" class="btn-secondary" style="display:none">Cancelar</button>
+        </form>
+      </div>
+      <table id="tabela-orcamentos">
+        <thead><tr><th>ID</th><th>Cliente</th><th>Descrição</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="view" id="view-vendas">
+      <div class="form-box">
+        <h2>Nova Venda</h2>
+        <form id="form-venda">
+          <select id="venda-cliente" required></select>
+          <select id="venda-funcionario"></select>
+          <select id="venda-produto"></select>
+          <input type="number" placeholder="Qtd" id="venda-qtd" value="1" />
+          <input placeholder="IMEI (se aparelho)" id="venda-imei" />
+          <input placeholder="Nº Série (se aparelho)" id="venda-serie" />
+          <button type="button" id="btn-add-item">Adicionar Item</button>
+          <div id="venda-itens" class="lista" style="grid-column:1/-1"></div>
+          <input type="number" step="0.01" placeholder="Valor Total" id="venda-total" readonly />
+          <select id="venda-pagamento">
+            <option>Dinheiro</option>
+            <option>PIX</option>
+            <option>Cartão Débito</option>
+            <option>Cartão Crédito</option>
+            <option>Boleto</option>
+          </select>
+          <button type="submit">Registrar Venda</button>
+        </form>
+      </div>
+      <table id="tabela-vendas">
+        <thead><tr><th>ID</th><th>Cliente</th><th>Valor</th><th>Pagamento</th><th>Data</th><th>Ações</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="view" id="view-estoque">
+      <div class="form-box">
+        <h2>Movimentar Estoque</h2>
+        <form id="form-estoque">
+          <select id="estoque-produto" required></select>
+          <select id="estoque-funcionario"></select>
+          <select id="estoque-tipo">
+            <option value="entrada">Entrada</option>
+            <option value="saida">Saída</option>
+          </select>
+          <input type="number" placeholder="Quantidade" id="estoque-qtd" required />
+          <input placeholder="Observação" id="estoque-obs" />
+          <button type="submit">Registrar</button>
+        </form>
+      </div>
+      <table id="tabela-estoque">
+        <thead><tr><th>ID</th><th>Produto</th><th>Funcionário</th><th>Tipo</th><th>Qtd</th><th>Data</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="view" id="view-caixa">
+      <div class="cards-grid">
+        <div class="card caixa"><h3>Saldo Atual do Caixa</h3><p id="caixa-saldo">R$ 0,00</p></div>
+        <div class="card lucro"><h3>Total de Entradas</h3><p id="caixa-entradas">R$ 0,00</p></div>
+        <div class="card despesa"><h3>Total de Saídas</h3><p id="caixa-saidas">R$ 0,00</p></div>
+      </div>
+
+      <h2 style="font-size:16px; margin-bottom:12px; color:var(--cor-texto-suave);">ENTRADAS POR FORMA DE PAGAMENTO</h2>
+      <div class="cards-grid" id="caixa-por-pagamento"></div>
+
+      <div class="form-box">
+        <h2>Movimentar Caixa</h2>
+        <form id="form-caixa">
+          <select id="caixa-tipo">
+            <option value="entrada">Entrada</option>
+            <option value="saida">Saída</option>
+          </select>
+          <input placeholder="Descrição" id="caixa-descricao" required />
+          <input type="number" step="0.01" placeholder="Valor" id="caixa-valor" required />
+          <select id="caixa-forma-pagamento">
+            <option value="">Forma de pagamento (opcional)</option>
+            <option value="Dinheiro">Dinheiro</option>
+            <option value="PIX">PIX</option>
+            <option value="Cartão Débito">Cartão Débito</option>
+            <option value="Cartão Crédito">Cartão Crédito</option>
+            <option value="Boleto">Boleto</option>
+          </select>
+          <select id="caixa-parcelas">
+            <option value="1">1x (à vista)</option>
+            <option value="2">2x</option>
+            <option value="3">3x</option>
+            <option value="4">4x</option>
+            <option value="5">5x</option>
+            <option value="6">6x</option>
+            <option value="10">10x</option>
+            <option value="12">12x</option>
+          </select>
+          <button type="submit">Registrar</button>
+        </form>
+      </div>
+
+      <table id="tabela-caixa">
+        <thead><tr><th>ID</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th>Forma</th><th>Parcelas</th><th>Data</th><th>Ações</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="view" id="view-financeiro">
+      <div class="form-box">
+        <h2>Novo Lançamento</h2>
+        <form id="form-financeiro">
+          <select id="fin-tipo">
+            <option value="receita">Receita</option>
+            <option value="despesa">Despesa</option>
+          </select>
+          <input placeholder="Descrição" id="fin-descricao" required />
+          <input type="number" step="0.01" placeholder="Valor" id="fin-valor" required />
+          <button type="submit">Lançar</button>
+        </form>
+      </div>
+      <table id="tabela-financeiro">
+        <thead><tr><th>ID</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th>Data</th><th>Ações</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="view" id="view-despesasFixas">
+      <div class="form-box">
+        <h2>Nova Despesa Fixa</h2>
+        <form id="form-despesa-fixa">
+          <input placeholder="Descrição (ex: Aluguel)" id="despesa-descricao" required />
+          <input type="number" step="0.01" placeholder="Valor" id="despesa-valor" required />
+          <input type="number" placeholder="Dia do vencimento (1-31)" id="despesa-dia" />
+          <button type="submit">Salvar</button>
+        </form>
+      </div>
+      <table id="tabela-despesas-fixas">
+        <thead><tr><th>ID</th><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Ações</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="view" id="view-relatorios">
+      <h2 style="font-size:16px; margin-bottom:12px; color:var(--cor-texto-suave);">HOJE</h2>
+      <div class="cards-grid">
+        <div class="card lucro"><h3>Lucro Assistência</h3><p id="rel-assistencia-hoje">R$ 0,00</p></div>
+        <div class="card lucro"><h3>Lucro Vendas</h3><p id="rel-vendas-hoje">R$ 0,00</p></div>
+        <div class="card caixa"><h3>Lucro Total</h3><p id="rel-total-hoje">R$ 0,00</p></div>
+      </div>
+      <h2 style="font-size:16px; margin-bottom:12px; color:var(--cor-texto-suave);">GERAL</h2>
+      <div class="cards-grid">
+        <div class="card"><h3>Clientes</h3><p id="rel-clientes">0</p></div>
+        <div class="card"><h3>OS Totais</h3><p id="rel-ordens">0</p></div>
+        <div class="card"><h3>Receitas</h3><p id="rel-receitas">R$ 0,00</p></div>
+        <div class="card despesa"><h3>Despesas</h3><p id="rel-despesas">R$ 0,00</p></div>
+        <div class="card caixa"><h3>Saldo</h3><p id="rel-saldo">R$ 0,00</p></div>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal-overlay" id="modal-cliente">
+    <div class="modal-box">
+      <h2>Detalhes do Cliente</h2>
+      <div id="modal-cliente-conteudo"></div>
+      <div class="botoes">
+        <button class="btn-fechar" onclick="fecharModalCliente()">Fechar</button>
+        <button class="btn-editar" id="btn-editar-no-modal">Editar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-pagamentos">
+    <div class="modal-box">
+      <h2>Pagamentos da OS #<span id="pagamento-os-id"></span></h2>
+      <div id="pagamento-resumo" style="margin-bottom:16px; padding:12px; background:var(--cor-primaria-tint); border-radius:8px;"></div>
+      <div class="form-box" style="margin-bottom:16px; box-shadow:none; padding:0;">
+        <h3 style="font-size:14px; margin-bottom:10px;">Registrar Novo Pagamento</h3>
+        <form id="form-pagamento">
+          <input type="number" step="0.01" placeholder="Valor" id="pagamento-valor" required />
+          <select id="pagamento-forma">
+            <option value="Dinheiro">Dinheiro</option>
+            <option value="PIX">PIX</option>
+            <option value="Cartão Débito">Cartão Débito</option>
+            <option value="Cartão Crédito">Cartão Crédito</option>
+            <option value="Boleto">Boleto</option>
+          </select>
+          <select id="pagamento-parcelas">
+            <option value="1">1x</option>
+            <option value="2">2x</option>
+            <option value="3">3x</option>
+            <option value="4">4x</option>
+            <option value="5">5x</option>
+            <option value="6">6x</option>
+            <option value="10">10x</option>
+            <option value="12">12x</option>
+          </select>
+          <input placeholder="Observação" id="pagamento-obs" />
+          <button type="submit">Registrar</button>
+        </form>
+      </div>
+      <h3 style="font-size:14px; margin-bottom:10px;">Histórico</h3>
+      <div id="pagamento-historico"></div>
+      <div class="botoes">
+        <button class="btn-fechar" onclick="fecharModalPagamentos()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/clientes.js"></script>
+  <script src="js/funcionarios.js"></script>
+  <script src="js/produtos.js"></script>
+  <script src="js/ordens.js"></script>
+  <script src="js/kanban.js"></script>
+  <script src="js/orcamentos.js"></script>
+  <script src="js/vendas.js"></script>
+  <script src="js/estoque.js"></script>
+  <script src="js/caixa.js"></script>
+  <script src="js/financeiro.js"></script>
+  <script src="js/despesasFixas.js"></script>
+  <script src="js/relatorios.js"></script>
+  <script src="js/tema.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
