@@ -26,6 +26,7 @@ async function carregarOrdens() {
       <td>${quitado ? '<span style="color:var(--cor-sucesso); font-weight:700;">QUITADO</span>' : formatMoney(falta)}</td>
       <td>
         <button class="btn-ver" onclick="verOrdem(${o.id})">Ver</button>
+        <button class="btn-ver" onclick="gerarPDFOrdem(${o.id})">PDF</button>
         <button class="btn-ver" onclick="abrirPagamentos(${o.id})">Pagamentos</button>
         <button class="edit" onclick="editarOrdem(${o.id})">Editar</button>
         <button onclick="excluirOrdem(${o.id})">Excluir</button>
@@ -171,6 +172,209 @@ async function excluirPagamento(ordemId, pagamentoId) {
   if (!confirm('Excluir este pagamento? O valor será removido do Caixa e do Financeiro.')) return;
   await apiDelete(`/ordens/${ordemId}/pagamento/${pagamentoId}`);
   await atualizarModalPagamentos();
+}
+
+// ============================================
+// GERAR PDF DA OS
+// ============================================
+
+async function gerarPDFOrdem(id) {
+  try {
+    const lista = await apiGet('/ordens');
+    const o = lista.find(x => x.id === id);
+    if (!o) return alert('OS não encontrada');
+
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+      alert('Biblioteca de PDF ainda não carregou. Verifique sua conexão e tente de novo.');
+      return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    const pago = o.valor_pago || 0;
+    const total = o.valor || 0;
+    const falta = Math.max(total - pago, 0);
+    const quitado = o.quitado === 1;
+
+    // CABEÇALHO
+    doc.setFillColor(0, 138, 125);
+    doc.rect(0, 0, 210, 28, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(20);
+    doc.setFont(undefined, 'bold');
+    doc.text('TechGest', 15, 13);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text('Sistema de Gestao para Assistencia Tecnica', 15, 20);
+    doc.text('Garagem Tech', 15, 25);
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text('OS #' + o.id, 195, 15, { align: 'right' });
+
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'normal');
+
+    let y = 40;
+    doc.setFont(undefined, 'bold');
+    doc.text('Status:', 15, y);
+    doc.setFont(undefined, 'normal');
+    doc.text(o.status || '-', 40, y);
+    doc.setFont(undefined, 'bold');
+    doc.text('Data entrada:', 120, y);
+    doc.setFont(undefined, 'normal');
+    doc.text(formatDate(o.data_entrada), 155, y);
+
+    y += 7;
+    doc.setFont(undefined, 'bold');
+    doc.text('Funcionario:', 15, y);
+    doc.setFont(undefined, 'normal');
+    doc.text(o.funcionario_nome || '-', 40, y);
+    doc.setFont(undefined, 'bold');
+    doc.text('Data saida:', 120, y);
+    doc.setFont(undefined, 'normal');
+    doc.text(o.data_saida ? formatDate(o.data_saida) : '-', 155, y);
+
+    y += 8;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(15, y, 195, y);
+    y += 8;
+
+    // CLIENTE
+    doc.setFillColor(230, 245, 243);
+    doc.rect(15, y - 5, 180, 7, 'F');
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(11);
+    doc.text('DADOS DO CLIENTE', 15, y);
+    y += 8;
+
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(10);
+    doc.text('Nome: ' + (o.cliente_nome || '-'), 15, y);
+    y += 6;
+
+    try {
+      const cliente = await apiGet('/clientes/' + o.cliente_id);
+      if (cliente) {
+        doc.text('Telefone: ' + (cliente.telefone || '-'), 15, y);
+        doc.text('CPF: ' + (cliente.cpf || '-'), 110, y);
+        y += 6;
+        doc.text('E-mail: ' + (cliente.email || '-'), 15, y);
+        y += 6;
+        doc.text('Endereco: ' + (cliente.endereco || '-'), 15, y);
+        y += 6;
+      }
+    } catch (e) {}
+
+    y += 4;
+
+    // APARELHO
+    doc.setFillColor(230, 245, 243);
+    doc.rect(15, y - 5, 180, 7, 'F');
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(11);
+    doc.text('DADOS DO APARELHO', 15, y);
+    y += 8;
+
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(10);
+    doc.text('Aparelho: ' + (o.aparelho || '-'), 15, y);
+    doc.text('Marca: ' + (o.marca || '-'), 110, y);
+    y += 6;
+    doc.text('Modelo: ' + (o.modelo || '-'), 15, y);
+    doc.text('IMEI: ' + (o.imei || '-'), 110, y);
+    y += 6;
+    doc.text('N Serie: ' + (o.numero_serie || '-'), 15, y);
+    y += 8;
+
+    // DESCRICAO
+    doc.setFillColor(230, 245, 243);
+    doc.rect(15, y - 5, 180, 7, 'F');
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(11);
+    doc.text('DESCRICAO DO SERVICO', 15, y);
+    y += 8;
+
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text('Defeito relatado:', 15, y);
+    y += 5;
+    doc.setFont(undefined, 'normal');
+    const defeito = doc.splitTextToSize(o.defeito || '-', 175);
+    doc.text(defeito, 15, y);
+    y += defeito.length * 5 + 3;
+
+    doc.setFont(undefined, 'bold');
+    doc.text('Servico realizado:', 15, y);
+    y += 5;
+    doc.setFont(undefined, 'normal');
+    const servico = doc.splitTextToSize(o.servico_realizado || '-', 175);
+    doc.text(servico, 15, y);
+    y += servico.length * 5 + 3;
+
+    doc.setFont(undefined, 'bold');
+    doc.text('Pecas utilizadas:', 15, y);
+    y += 5;
+    doc.setFont(undefined, 'normal');
+    const pecas = doc.splitTextToSize(o.pecas_utilizadas || '-', 175);
+    doc.text(pecas, 15, y);
+    y += pecas.length * 5 + 5;
+
+    // VALORES
+    doc.setFillColor(0, 138, 125);
+    doc.setTextColor(255, 255, 255);
+    doc.rect(15, y - 5, 180, 7, 'F');
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(11);
+    doc.text('VALORES', 15, y);
+    y += 10;
+
+    doc.setTextColor(0, 0, 0);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(11);
+    doc.text('Valor Total:', 15, y);
+    doc.setFont(undefined, 'bold');
+    doc.text(formatMoney(total), 195, y, { align: 'right' });
+    y += 7;
+
+    doc.setFont(undefined, 'normal');
+    doc.text('Valor Pago:', 15, y);
+    doc.setFont(undefined, 'bold');
+    doc.text(formatMoney(pago), 195, y, { align: 'right' });
+    y += 7;
+
+    doc.setFont(undefined, 'normal');
+    doc.text('Falta Pagar:', 15, y);
+    doc.setFont(undefined, 'bold');
+    if (quitado) {
+      doc.setTextColor(16, 185, 129);
+      doc.text('QUITADO', 195, y, { align: 'right' });
+    } else {
+      doc.setTextColor(239, 68, 68);
+      doc.text(formatMoney(falta), 195, y, { align: 'right' });
+    }
+    doc.setTextColor(0, 0, 0);
+
+    // RODAPE
+    const alturaPagina = doc.internal.pageSize.height;
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text(
+      'Documento gerado em ' + new Date().toLocaleString('pt-BR') + ' pelo sistema TechGest',
+      105,
+      alturaPagina - 10,
+      { align: 'center' }
+    );
+
+    const nomeCliente = (o.cliente_nome || 'cliente').replace(/[^a-zA-Z0-9]/g, '-');
+    doc.save('OS-' + o.id + '-' + nomeCliente + '.pdf');
+
+  } catch (err) {
+    alert('Erro ao gerar PDF: ' + err.message);
+    console.error(err);
+  }
 }
 
 // ============================================
