@@ -282,7 +282,11 @@
       </table>
     </section>
 
-    <section class="view" id="view-caixa">
+        <section class="view" id="view-caixa">
+      <!-- PAINEL DA SESSÃO ATUAL -->
+      <div id="caixa-sessao-painel" style="margin-bottom:24px;"></div>
+
+      <!-- CARDS DE SALDO GERAL -->
       <div class="cards-grid">
         <div class="card caixa"><h3>Saldo Atual do Caixa</h3><p id="caixa-saldo">R$ 0,00</p></div>
         <div class="card lucro"><h3>Total de Entradas</h3><p id="caixa-entradas">R$ 0,00</p></div>
@@ -325,6 +329,23 @@
 
       <table id="tabela-caixa">
         <thead><tr><th>ID</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th>Forma</th><th>Parcelas</th><th>Data</th><th>Ações</th></tr></thead>
+        <tbody></tbody>
+      </table>
+
+      <h2 style="font-size:16px; margin:24px 0 12px 0; color:var(--cor-texto-suave);">HISTÓRICO DE FECHAMENTOS</h2>
+      <table id="tabela-historico-caixa">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Abertura</th>
+            <th>Fechamento</th>
+            <th>Inicial</th>
+            <th>Esperado</th>
+            <th>Contado</th>
+            <th>Diferença</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
         <tbody></tbody>
       </table>
     </section>
@@ -435,6 +456,40 @@
       <div id="modal-ver-conteudo"></div>
       <div class="botoes">
         <button class="btn-fechar" onclick="fecharModalVer()">Fechar</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-overlay" id="modal-abrir-caixa">
+    <div class="modal-box" style="max-width:500px;">
+      <h2>Abrir Caixa</h2>
+      <p style="color:var(--cor-texto-suave); font-size:14px; margin-bottom:16px;">
+        Informe o valor em dinheiro que está na gaveta agora.
+      </p>
+      <div class="form-box" style="box-shadow:none; padding:0; margin-bottom:0;">
+        <form id="form-abrir-caixa">
+          <input type="number" step="0.01" placeholder="Valor inicial (ex: 200.00)" id="abrir-valor-inicial" required />
+          <input placeholder="Observação (opcional)" id="abrir-observacao" />
+          <button type="submit">Abrir Caixa</button>
+          <button type="button" class="btn-secondary" onclick="fecharModalAbrirCaixa()">Cancelar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-fechar-caixa">
+    <div class="modal-box" style="max-width:500px;">
+      <h2>Fechar Caixa</h2>
+      <div id="fechar-resumo" style="margin-bottom:16px; padding:12px; background:var(--cor-primaria-tint); border-radius:8px;"></div>
+      <p style="color:var(--cor-texto-suave); font-size:14px; margin-bottom:16px;">
+        Conte o dinheiro na gaveta e digite abaixo:
+      </p>
+      <div class="form-box" style="box-shadow:none; padding:0; margin-bottom:0;">
+        <form id="form-fechar-caixa">
+          <input type="number" step="0.01" placeholder="Valor contado (ex: 350.00)" id="fechar-valor-contado" required />
+          <input placeholder="Observação (opcional)" id="fechar-observacao" />
+          <button type="submit">Fechar Caixa</button>
+          <button type="button" class="btn-secondary" onclick="fecharModalFecharCaixa()">Cancelar</button>
+        </form>
       </div>
     </div>
   </div>
