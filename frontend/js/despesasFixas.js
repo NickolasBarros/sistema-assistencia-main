@@ -14,9 +14,29 @@ async function carregarDespesasFixas() {
       <td>${d.descricao}</td>
       <td>${formatMoney(d.valor)}</td>
       <td>Dia ${d.dia_vencimento || '-'}</td>
-      <td><button onclick="excluirDespesaFixa(${d.id})">Excluir</button></td>`;
+      <td>
+        <button class="btn-ver" onclick="verDespesaFixa(${d.id})">Ver</button>
+        <button onclick="excluirDespesaFixa(${d.id})">Excluir</button>
+      </td>`;
     tbody.appendChild(tr);
   });
+}
+
+async function verDespesaFixa(id) {
+  const lista = await apiGet('/despesasFixas');
+  const d = lista.find(x => x.id === id);
+  if (!d) return;
+
+  const html = `
+    <div class="info-linha"><strong>ID</strong><span>${d.id}</span></div>
+    <div class="info-linha"><strong>Descrição</strong><span>${d.descricao || '-'}</span></div>
+    <div class="info-linha"><strong>Valor</strong><span>${formatMoney(d.valor)}</span></div>
+    <div class="info-linha"><strong>Dia vencimento</strong><span>${d.dia_vencimento || '-'}</span></div>
+    <div class="info-linha"><strong>Ativo</strong><span>${d.ativo ? 'Sim' : 'Não'}</span></div>
+    <div class="info-linha"><strong>Criado em</strong><span>${formatDate(d.criado_em)}</span></div>
+  `;
+
+  abrirModalVer('Detalhes da Despesa Fixa', html);
 }
 
 async function excluirDespesaFixa(id) {

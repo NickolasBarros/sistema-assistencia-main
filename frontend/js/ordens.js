@@ -25,12 +25,46 @@ async function carregarOrdens() {
       <td>${formatMoney(pago)}</td>
       <td>${quitado ? '<span style="color:var(--cor-sucesso); font-weight:700;">QUITADO</span>' : formatMoney(falta)}</td>
       <td>
+        <button class="btn-ver" onclick="verOrdem(${o.id})">Ver</button>
         <button class="btn-ver" onclick="abrirPagamentos(${o.id})">Pagamentos</button>
         <button class="edit" onclick="editarOrdem(${o.id})">Editar</button>
         <button onclick="excluirOrdem(${o.id})">Excluir</button>
       </td>`;
     tbody.appendChild(tr);
   });
+}
+
+async function verOrdem(id) {
+  const lista = await apiGet('/ordens');
+  const o = lista.find(x => x.id === id);
+  if (!o) return;
+
+  const pago = o.valor_pago || 0;
+  const total = o.valor || 0;
+  const falta = Math.max(total - pago, 0);
+  const quitado = o.quitado === 1;
+
+  const html = `
+    <div class="info-linha"><strong>OS</strong><span>#${o.id}</span></div>
+    <div class="info-linha"><strong>Cliente</strong><span>${o.cliente_nome || '-'}</span></div>
+    <div class="info-linha"><strong>Funcionário</strong><span>${o.funcionario_nome || '-'}</span></div>
+    <div class="info-linha"><strong>Status</strong><span>${o.status || '-'}</span></div>
+    <div class="info-linha"><strong>Aparelho</strong><span>${o.aparelho || '-'}</span></div>
+    <div class="info-linha"><strong>Marca</strong><span>${o.marca || '-'}</span></div>
+    <div class="info-linha"><strong>Modelo</strong><span>${o.modelo || '-'}</span></div>
+    <div class="info-linha"><strong>IMEI</strong><span>${o.imei || '-'}</span></div>
+    <div class="info-linha"><strong>Nº Série</strong><span>${o.numero_serie || '-'}</span></div>
+    <div class="info-linha"><strong>Defeito</strong><span>${o.defeito || '-'}</span></div>
+    <div class="info-linha"><strong>Serviço realizado</strong><span>${o.servico_realizado || '-'}</span></div>
+    <div class="info-linha"><strong>Peças utilizadas</strong><span>${o.pecas_utilizadas || '-'}</span></div>
+    <div class="info-linha"><strong>Valor total</strong><span>${formatMoney(total)}</span></div>
+    <div class="info-linha"><strong>Valor pago</strong><span>${formatMoney(pago)}</span></div>
+    <div class="info-linha"><strong>Falta</strong><span>${quitado ? 'QUITADO' : formatMoney(falta)}</span></div>
+    <div class="info-linha"><strong>Data entrada</strong><span>${formatDate(o.data_entrada)}</span></div>
+    <div class="info-linha"><strong>Data saída</strong><span>${formatDate(o.data_saida)}</span></div>
+  `;
+
+  abrirModalVer('Detalhes da OS', html);
 }
 
 async function editarOrdem(id) {

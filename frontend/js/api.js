@@ -43,3 +43,38 @@ function formatDate(d) {
   if (!d) return '-';
   return new Date(d).toLocaleString('pt-BR');
 }
+
+
+// ============================================
+// MODAL GENÉRICO "VER"
+// ============================================
+
+function abrirModalVer(titulo, conteudoHTML) {
+  const modal = document.getElementById('modal-ver');
+  const tituloEl = document.getElementById('modal-ver-titulo');
+  const conteudo = document.getElementById('modal-ver-conteudo');
+
+  if (!modal) return;
+
+  tituloEl.textContent = titulo;
+  conteudo.innerHTML = conteudoHTML;
+  modal.classList.add('active');
+}
+
+function fecharModalVer() {
+  const modal = document.getElementById('modal-ver');
+  if (modal) modal.classList.remove('active');
+}
+
+// Fecha o modal ao clicar fora dele ou apertar ESC
+document.addEventListener('DOMContentLoaded', () => {
+  const modal = document.getElementById('modal-ver');
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) fecharModalVer();
+    });
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') fecharModalVer();
+  });
+});

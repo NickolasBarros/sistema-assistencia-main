@@ -14,12 +14,29 @@ async function carregarFuncionarios() {
       <td>${f.cargo || '-'}</td>
       <td>${f.telefone || '-'}</td>
       <td>
+        <button class="btn-ver" onclick="verFuncionario(${f.id})">Ver</button>
         <button class="edit" onclick="editarFuncionario(${f.id})">Editar</button>
         <button onclick="excluirFuncionario(${f.id})">Excluir</button>
       </td>`;
     tbody.appendChild(tr);
   });
   await atualizarSelectsFuncionarios();
+}
+
+async function verFuncionario(id) {
+  const lista = await apiGet('/funcionarios');
+  const f = lista.find(x => x.id === id);
+  if (!f) return;
+
+  const html = `
+    <div class="info-linha"><strong>ID</strong><span>${f.id}</span></div>
+    <div class="info-linha"><strong>Nome</strong><span>${f.nome || '-'}</span></div>
+    <div class="info-linha"><strong>Cargo</strong><span>${f.cargo || '-'}</span></div>
+    <div class="info-linha"><strong>Telefone</strong><span>${f.telefone || '-'}</span></div>
+    <div class="info-linha"><strong>Cadastrado em</strong><span>${formatDate(f.criado_em)}</span></div>
+  `;
+
+  abrirModalVer('Detalhes do Funcionário', html);
 }
 
 async function editarFuncionario(id) {

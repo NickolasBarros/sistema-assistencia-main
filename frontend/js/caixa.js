@@ -18,12 +18,33 @@ async function carregarCaixa() {
       <td>${c.forma_pagamento || '-'}</td>
       <td>${c.parcelas > 1 ? c.parcelas + 'x' : '1x'}</td>
       <td>${formatDate(c.data_mov)}</td>
-      <td><button onclick="excluirCaixa(${c.id})">Excluir</button></td>`;
+      <td>
+        <button class="btn-ver" onclick="verMovCaixa(${c.id})">Ver</button>
+        <button onclick="excluirCaixa(${c.id})">Excluir</button>
+      </td>`;
     tbody.appendChild(tr);
   });
 
   await carregarSaldoCaixa();
   await carregarResumoPagamentos();
+}
+
+async function verMovCaixa(id) {
+  const lista = await apiGet('/caixa');
+  const c = lista.find(x => x.id === id);
+  if (!c) return;
+
+  const html = `
+    <div class="info-linha"><strong>ID</strong><span>${c.id}</span></div>
+    <div class="info-linha"><strong>Tipo</strong><span>${c.tipo || '-'}</span></div>
+    <div class="info-linha"><strong>Descrição</strong><span>${c.descricao || '-'}</span></div>
+    <div class="info-linha"><strong>Valor</strong><span>${formatMoney(c.valor)}</span></div>
+    <div class="info-linha"><strong>Forma pagamento</strong><span>${c.forma_pagamento || '-'}</span></div>
+    <div class="info-linha"><strong>Parcelas</strong><span>${c.parcelas > 1 ? c.parcelas + 'x' : '1x'}</span></div>
+    <div class="info-linha"><strong>Data</strong><span>${formatDate(c.data_mov)}</span></div>
+  `;
+
+  abrirModalVer('Detalhes da Movimentação', html);
 }
 
 async function carregarSaldoCaixa() {

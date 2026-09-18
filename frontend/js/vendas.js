@@ -44,9 +44,43 @@ async function carregarVendas() {
       <td>${formatMoney(v.valor_total)}</td>
       <td>${v.forma_pagamento || '-'}</td>
       <td>${formatDate(v.data_venda)}</td>
-      <td><button onclick="excluirVenda(${v.id})">Excluir</button></td>`;
+      <td>
+        <button class="btn-ver" onclick="verVenda(${v.id})">Ver</button>
+        <button onclick="excluirVenda(${v.id})">Excluir</button>
+      </td>`;
     tbody.appendChild(tr);
   });
+}
+
+async function verVenda(id) {
+  const lista = await apiGet('/vendas');
+  const v = lista.find(x => x.id === id);
+  if (!v) return;
+
+  let itensHTML = '<div class="vazio">Sem itens</div>';
+  try {
+    const itens = JSON.parse(v.itens || '[]');
+    if (itens.length > 0) {
+      itensHTML = itens.map(i =>
+        `<div class="item">${i.nome || i.descricao || 'Item'} — ${i.quantidade}x ${formatMoney(i.preco)} = <strong>${formatMoney((i.preco || 0) * (i.quantidade || 1))}</strong></div>`
+      ).join('');
+    }
+  } catch (e) { /* mantém o padrão */ }
+
+  const html = `
+    <div class="info-linha"><strong>Venda</strong><span>#${v.id}</span></div>
+    <div class="info-linha"><strong>Cliente</strong><span>${v.cliente_nome || '-'}</span></div>
+    <div class="info-linha"><strong>Funcionário</strong><span>${v.funcionario_nome || '-'}</span></div>
+    <div class="info-linha"><strong>Valor total</strong><span>${formatMoney(v.valor_total)}</span></div>
+    <div class="info-linha"><strong>Forma pagamento</strong><span>${v.forma_pagamento || '-'}</span></div>
+    <div class="info-linha"><strong>Data</strong><span>${formatDate(v.data_venda)}</span></div>
+    <div style="margin-top:16px;">
+      <strong style="display:block; margin-bottom:8px; color:var(--cor-texto-suave); font-size:13px;">ITENS DA VENDA</strong>
+      <div class="lista">${itensHTML}</div>
+    </div>
+  `;
+
+  abrirModalVer('Detalhes da Venda', html);
 }
 
 async function excluirVenda(id) {

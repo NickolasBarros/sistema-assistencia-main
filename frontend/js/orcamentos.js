@@ -1,3 +1,7 @@
+// ============================================
+// ORÇAMENTOS
+// ============================================
+
 async function carregarOrcamentos() {
   const lista = await apiGet('/orcamentos');
   const tbody = document.querySelector('#tabela-orcamentos tbody');
@@ -11,11 +15,29 @@ async function carregarOrcamentos() {
       <td>${formatMoney(o.valor_total)}</td>
       <td>${o.status}</td>
       <td>
+        <button class="btn-ver" onclick="verOrcamento(${o.id})">Ver</button>
         <button class="edit" onclick="editarOrcamento(${o.id})">Editar</button>
         <button onclick="excluirOrcamento(${o.id})">Excluir</button>
       </td>`;
     tbody.appendChild(tr);
   });
+}
+
+async function verOrcamento(id) {
+  const lista = await apiGet('/orcamentos');
+  const o = lista.find(x => x.id === id);
+  if (!o) return;
+
+  const html = `
+    <div class="info-linha"><strong>ID</strong><span>${o.id}</span></div>
+    <div class="info-linha"><strong>Cliente</strong><span>${o.cliente_nome || '-'}</span></div>
+    <div class="info-linha"><strong>Descrição</strong><span>${o.descricao || '-'}</span></div>
+    <div class="info-linha"><strong>Valor total</strong><span>${formatMoney(o.valor_total)}</span></div>
+    <div class="info-linha"><strong>Status</strong><span>${o.status || '-'}</span></div>
+    <div class="info-linha"><strong>Criado em</strong><span>${formatDate(o.data_criacao)}</span></div>
+  `;
+
+  abrirModalVer('Detalhes do Orçamento', html);
 }
 
 async function editarOrcamento(id) {
@@ -37,7 +59,10 @@ async function excluirOrcamento(id) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('form-orcamento').addEventListener('submit', async (e) => {
+  const form = document.getElementById('form-orcamento');
+  if (!form) return;
+
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const id = document.getElementById('orcamento-id').value;
     const dados = {
@@ -49,15 +74,18 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     if (id) await apiPut('/orcamentos/' + id, dados);
     else await apiPost('/orcamentos', dados);
-    e.target.reset();
+    form.reset();
     document.getElementById('orcamento-id').value = '';
     document.getElementById('cancel-orcamento').style.display = 'none';
     carregarOrcamentos();
   });
 
-  document.getElementById('cancel-orcamento').addEventListener('click', () => {
-    document.getElementById('form-orcamento').reset();
-    document.getElementById('orcamento-id').value = '';
-    document.getElementById('cancel-orcamento').style.display = 'none';
-  });
+  const btnCancel = document.getElementById('cancel-orcamento');
+  if (btnCancel) {
+    btnCancel.addEventListener('click', () => {
+      form.reset();
+      document.getElementById('orcamento-id').value = '';
+      btnCancel.style.display = 'none';
+    });
+  }
 });

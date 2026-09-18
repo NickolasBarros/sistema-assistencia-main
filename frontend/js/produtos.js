@@ -16,12 +16,35 @@ async function carregarProdutos() {
       <td>${p.quantidade}</td>
       <td>${p.funcionario_nome || '-'}</td>
       <td>
+        <button class="btn-ver" onclick="verProduto(${p.id})">Ver</button>
         <button class="edit" onclick="editarProduto(${p.id})">Editar</button>
         <button onclick="excluirProduto(${p.id})">Excluir</button>
       </td>`;
     tbody.appendChild(tr);
   });
   await atualizarSelectsProdutos();
+}
+
+async function verProduto(id) {
+  const lista = await apiGet('/produtos');
+  const p = lista.find(x => x.id === id);
+  if (!p) return;
+
+  const html = `
+    <div class="info-linha"><strong>ID</strong><span>${p.id}</span></div>
+    <div class="info-linha"><strong>Nome</strong><span>${p.nome || '-'}</span></div>
+    <div class="info-linha"><strong>Tipo</strong><span>${p.tipo || '-'}</span></div>
+    <div class="info-linha"><strong>Descrição</strong><span>${p.descricao || '-'}</span></div>
+    <div class="info-linha"><strong>Preço</strong><span>${formatMoney(p.preco)}</span></div>
+    <div class="info-linha"><strong>Quantidade</strong><span>${p.quantidade || 0}</span></div>
+    <div class="info-linha"><strong>Estoque mínimo</strong><span>${p.estoque_minimo || 0}</span></div>
+    <div class="info-linha"><strong>IMEI</strong><span>${p.imei || '-'}</span></div>
+    <div class="info-linha"><strong>Nº Série</strong><span>${p.numero_serie || '-'}</span></div>
+    <div class="info-linha"><strong>Funcionário</strong><span>${p.funcionario_nome || '-'}</span></div>
+    <div class="info-linha"><strong>Cadastrado em</strong><span>${formatDate(p.criado_em)}</span></div>
+  `;
+
+  abrirModalVer('Detalhes do Produto/Serviço', html);
 }
 
 async function editarProduto(id) {
