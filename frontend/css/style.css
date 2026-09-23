@@ -179,3 +179,87 @@ body.dark .kanban-col.drag-over { background: var(--cor-primaria-escura); }
   .nav-item span { display: none; }
   .content { margin-left: 60px; padding: 16px; }
 }
+
+/* ============================================
+   BOTÕES DE FILTRO (Extrato Financeiro)
+   ============================================ */
+.filtro-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--cor-borda);
+  background: var(--cor-fundo-card);
+  color: var(--cor-texto);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all .2s;
+  font-family: inherit;
+}
+.filtro-btn:hover {
+  border-color: var(--cor-primaria);
+  color: var(--cor-primaria);
+}
+.filtro-btn.active {
+  background: var(--cor-primaria);
+  color: #fff;
+  border-color: var(--cor-primaria);
+}
+
+/* Indicador de direção (seta) nos botões de ordenação */
+.ordenar-btn[data-dir="asc"]::after {
+  content: ' ↑';
+  font-weight: 700;
+}
+.ordenar-btn[data-dir="desc"].active::after {
+  content: ' ↓';
+  font-weight: 700;
+}
+
+/* ============================================
+   INDICADOR AO VIVO (Auto-refresh)
+   ============================================ */
+.live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--cor-primaria-tint);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cor-primaria-escura);
+  transition: all .3s;
+}
+body.dark .live-indicator {
+  background: var(--cor-primaria-escura);
+  color: #fff;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cor-sucesso);
+  animation: pulse 1.5s infinite;
+}
+
+.live-indicator.pausado {
+  background: #FEF3C7;
+  color: #92400E;
+}
+.live-indicator.pausado .live-dot {
+  background: var(--cor-aviso);
+  animation: none;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}

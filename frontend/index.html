@@ -381,10 +381,81 @@
         <tbody></tbody>
       </table>
     </section>
-
+   
     <section class="view" id="view-financeiro">
       <div class="form-box">
-        <h2>Novo Lançamento</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <h2 style="margin:0;">Extrato Financeiro</h2>
+
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div id="live-indicator" class="live-indicator">
+              <span class="live-dot"></span>
+              <span id="live-texto">Ao vivo</span>
+            </div>
+            <button id="btn-toggle-live" class="filtro-btn active" onclick="toggleAutoRefresh()" title="Ligar/Desligar atualização automática">
+              ⏸ Pausar
+            </button>
+          </div>
+
+        </div>
+
+        <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+          <button class="filtro-btn active" data-periodo="hoje" onclick="aplicarFiltroPeriodo('hoje')">Hoje</button>
+          <button class="filtro-btn" data-periodo="semana" onclick="aplicarFiltroPeriodo('semana')">Semana</button>
+          <button class="filtro-btn" data-periodo="mes" onclick="aplicarFiltroPeriodo('mes')">Mês</button>
+          <button class="filtro-btn" data-periodo="ano" onclick="aplicarFiltroPeriodo('ano')">Ano</button>
+          <button class="filtro-btn" data-periodo="todos" onclick="aplicarFiltroPeriodo('todos')">Todos</button>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:10px;">
+          <input type="date" id="filtro-data-inicio" onchange="aplicarFiltroCustom()" />
+          <input type="date" id="filtro-data-fim" onchange="aplicarFiltroCustom()" />
+          <select id="filtro-tipo" onchange="aplicarFiltroCustom()">
+            <option value="todos">Todos os tipos</option>
+            <option value="receita">Somente Receitas</option>
+            <option value="despesa">Somente Despesas</option>
+          </select>
+        </div>
+
+               <input type="text" id="filtro-busca" placeholder="Buscar por descrição..." oninput="aplicarFiltroCustom()" />
+      </div>
+
+      <div class="form-box">
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <strong style="font-size:13px; color:var(--cor-texto-suave); text-transform:uppercase;">Ordenar por:</strong>
+          <button class="filtro-btn ordenar-btn active" data-ordem="auto" onclick="aplicarOrdenacao('auto')">
+            ✨ Adaptativa
+          </button>
+          <button class="filtro-btn ordenar-btn" data-ordem="data" data-dir="desc" onclick="aplicarOrdenacao('data')">
+            📅 Data
+          </button>
+          <button class="filtro-btn ordenar-btn" data-ordem="valor" data-dir="desc" onclick="aplicarOrdenacao('valor')">
+            💰 Valor
+          </button>
+          <button class="filtro-btn ordenar-btn" data-ordem="tipo" data-dir="desc" onclick="aplicarOrdenacao('tipo')">
+            🏷️ Tipo
+          </button>
+                   <small id="ordenacao-atual" style="color:var(--cor-texto-suave); font-size:11px;"></small>
+          <div style="display:flex; gap:6px; margin-left:auto;">
+            <button class="filtro-btn" onclick="exportarPDF()" title="Baixar relatório em PDF">
+              📄 PDF
+            </button>
+            <button class="filtro-btn" onclick="exportarCSV()" title="Baixar planilha (abre no Excel)">
+              📊 CSV
+            </button>
+          </div>
+      </div>
+
+      <div class="cards-grid">
+
+        <div class="card lucro"><h3>Receitas</h3><p id="fin-total-receitas">R$ 0,00</p></div>
+        <div class="card despesa"><h3>Despesas</h3><p id="fin-total-despesas">R$ 0,00</p></div>
+        <div class="card caixa"><h3>Saldo do Período</h3><p id="fin-total-saldo">R$ 0,00</p></div>
+        <div class="card"><h3>Transações</h3><p id="fin-total-qtd">0</p></div>
+      </div>
+
+      <div class="form-box">
+        <h2>Novo Lançamento Manual</h2>
         <form id="form-financeiro">
           <select id="fin-tipo">
             <option value="receita">Receita</option>
@@ -395,12 +466,13 @@
           <button type="submit">Lançar</button>
         </form>
       </div>
+
       <table id="tabela-financeiro">
-        <thead><tr><th>ID</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th>Data</th><th>Ações</th></tr></thead>
+        <thead><tr><th>ID</th><th>Data</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th>Ações</th></tr></thead>
         <tbody></tbody>
       </table>
     </section>
-
+   
     <section class="view" id="view-despesasFixas">
       <div class="form-box">
         <h2>Nova Despesa Fixa</h2>
