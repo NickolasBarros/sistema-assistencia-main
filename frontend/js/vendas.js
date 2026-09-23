@@ -50,6 +50,11 @@ async function carregarVendas() {
       </td>`;
     tbody.appendChild(tr);
   });
+
+  // Carrega os dropdowns da venda
+  await atualizarSelectsClientes();
+  await atualizarSelectsFuncionarios();
+  await atualizarSelectsProdutos();
 }
 
 async function verVenda(id) {

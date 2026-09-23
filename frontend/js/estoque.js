@@ -18,6 +18,10 @@ async function carregarEstoque() {
       <td><button class="btn-ver" onclick="verMovimentacao(${m.id})">Ver</button></td>`;
     tbody.appendChild(tr);
   });
+
+  // Carrega os dropdowns de estoque
+  await atualizarSelectsProdutos();
+  await atualizarSelectsFuncionarios();
 }
 
 async function verMovimentacao(id) {

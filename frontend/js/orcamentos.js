@@ -21,6 +21,9 @@ async function carregarOrcamentos() {
       </td>`;
     tbody.appendChild(tr);
   });
+
+  // Carrega o dropdown de orçamentos
+  await atualizarSelectsClientes();
 }
 
 async function verOrcamento(id) {

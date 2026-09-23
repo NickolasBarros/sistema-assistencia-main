@@ -2,17 +2,50 @@
 // ORDENS DE SERVIÇO (OS)
 // ============================================
 
-let osModalAtual = null;
+let osAtual = null;
+
+// ============================================
+// LISTAR
+// ============================================
 
 async function carregarOrdens() {
   const lista = await apiGet('/ordens');
   const tbody = document.querySelector('#tabela-ordens tbody');
   tbody.innerHTML = '';
+
   lista.forEach(o => {
     const pago = o.valor_pago || 0;
     const total = o.valor || 0;
     const falta = Math.max(total - pago, 0);
     const quitado = o.quitado === 1;
+
+    // BARRA DE GARANTIA
+    let barraGarantia = '<small style="color:var(--cor-texto-suave);">—</small>';
+    if (o.garantia_ate) {
+      const inicio = new Date(o.data_saida).getTime();
+      const fim = new Date(o.garantia_ate).getTime();
+      const agora = Date.now();
+      const totalMs = fim - inicio;
+      const passouMs = agora - inicio;
+      let pct = (passouMs / totalMs) * 100;
+      if (pct < 0) pct = 0;
+      if (pct > 100) pct = 100;
+
+      const diasRestantes = Math.max(0, Math.ceil((fim - agora) / (1000 * 60 * 60 * 24)));
+      const expirada = agora > fim;
+      const cor = expirada ? 'var(--cor-erro)' : pct < 50 ? 'var(--cor-sucesso)' : pct < 85 ? 'var(--cor-aviso)' : 'var(--cor-erro)';
+
+      barraGarantia = `
+        <div style="min-width:130px;">
+          <div style="height:6px; background:#e5e7eb; border-radius:3px; overflow:hidden; margin-bottom:4px;">
+            <div style="height:100%; width:${pct}%; background:${cor}; transition:width .3s;"></div>
+          </div>
+          <small style="font-size:10px; color:${expirada ? 'var(--cor-erro)' : 'var(--cor-texto-suave)'}; font-weight:${expirada ? '700' : '400'};">
+            ${expirada ? 'Garantia expirada' : diasRestantes + ' dias restantes'}
+          </small>
+        </div>
+      `;
+    }
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -22,18 +55,24 @@ async function carregarOrdens() {
       <td>${o.funcionario_nome || '-'}</td>
       <td><span class="badge">${o.status}</span></td>
       <td>${formatMoney(total)}</td>
-      <td>${formatMoney(pago)}</td>
       <td>${quitado ? '<span style="color:var(--cor-sucesso); font-weight:700;">QUITADO</span>' : formatMoney(falta)}</td>
+      <td>${barraGarantia}</td>
       <td>
         <button class="btn-ver" onclick="verOrdem(${o.id})">Ver</button>
-        <button class="btn-ver" onclick="gerarPDFOrdem(${o.id})">PDF</button>
-        <button class="btn-ver" onclick="abrirPagamentos(${o.id})">Pagamentos</button>
+        <button class="btn-ver" onclick="abrirModalEnvio(${o.id})">Enviar</button>
         <button class="edit" onclick="editarOrdem(${o.id})">Editar</button>
         <button onclick="excluirOrdem(${o.id})">Excluir</button>
       </td>`;
     tbody.appendChild(tr);
   });
+
+  await atualizarSelectsClientes();
+  await atualizarSelectsFuncionarios();
 }
+
+// ============================================
+// VER
+// ============================================
 
 async function verOrdem(id) {
   const lista = await apiGet('/ordens');
@@ -63,15 +102,22 @@ async function verOrdem(id) {
     <div class="info-linha"><strong>Falta</strong><span>${quitado ? 'QUITADO' : formatMoney(falta)}</span></div>
     <div class="info-linha"><strong>Data entrada</strong><span>${formatDate(o.data_entrada)}</span></div>
     <div class="info-linha"><strong>Data saída</strong><span>${formatDate(o.data_saida)}</span></div>
+    <div class="info-linha"><strong>Garantia até</strong><span>${o.garantia_ate ? formatDate(o.garantia_ate) : '-'}</span></div>
   `;
 
   abrirModalVer('Detalhes da OS', html);
 }
 
+// ============================================
+// EDITAR (com seção de pagamentos embutida)
+// ============================================
+
 async function editarOrdem(id) {
   const lista = await apiGet('/ordens');
   const o = lista.find(x => x.id === id);
   if (!o) return;
+
+  osAtual = o.id;
 
   document.getElementById('ordem-id').value = o.id;
   document.getElementById('ordem-cliente').value = o.cliente_id || '';
@@ -88,38 +134,19 @@ async function editarOrdem(id) {
   document.getElementById('ordem-status').value = o.status || 'Aberta';
   document.getElementById('cancel-ordem').style.display = 'inline-block';
 
+  // Mostra a seção de pagamentos
+  document.getElementById('pagamentos-os-section').style.display = 'block';
+  document.getElementById('pagamento-os-id').textContent = o.id;
+  await atualizarPagamentosOS();
+
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-async function excluirOrdem(id) {
-  if (!confirm('Excluir OS? Todos os pagamentos relacionados também serão removidos.')) return;
-  await apiDelete('/ordens/' + id);
-  carregarOrdens();
-}
-
-// ============================================
-// MODAL DE PAGAMENTOS
-// ============================================
-
-async function abrirPagamentos(ordemId) {
-  osModalAtual = ordemId;
-  document.getElementById('pagamento-os-id').textContent = ordemId;
-  document.getElementById('modal-pagamentos').classList.add('active');
-  await atualizarModalPagamentos();
-}
-
-function fecharModalPagamentos() {
-  const modal = document.getElementById('modal-pagamentos');
-  if (modal) modal.classList.remove('active');
-  osModalAtual = null;
-  carregarOrdens();
-}
-
-async function atualizarModalPagamentos() {
-  if (!osModalAtual) return;
+async function atualizarPagamentosOS() {
+  if (!osAtual) return;
 
   const lista = await apiGet('/ordens');
-  const ordem = lista.find(o => o.id === osModalAtual);
+  const ordem = lista.find(o => o.id === osAtual);
   if (!ordem) return;
 
   const pago = ordem.valor_pago || 0;
@@ -142,7 +169,7 @@ async function atualizarModalPagamentos() {
     </div>
   `;
 
-  const pagamentos = await apiGet(`/ordens/${osModalAtual}/pagamentos`);
+  const pagamentos = await apiGet(`/ordens/${osAtual}/pagamentos`);
   const div = document.getElementById('pagamento-historico');
 
   if (pagamentos.length === 0) {
@@ -160,7 +187,7 @@ async function atualizarModalPagamentos() {
             <td>${formatMoney(p.valor)}</td>
             <td>${p.forma_pagamento || '-'}</td>
             <td>${p.parcelas > 1 ? p.parcelas + 'x' : '1x'}</td>
-            <td><button onclick="excluirPagamento(${osModalAtual}, ${p.id})">x</button></td>
+            <td><button type="button" onclick="excluirPagamento(${osAtual}, ${p.id})">x</button></td>
           </tr>
         `).join('')}
       </tbody>
@@ -171,210 +198,490 @@ async function atualizarModalPagamentos() {
 async function excluirPagamento(ordemId, pagamentoId) {
   if (!confirm('Excluir este pagamento? O valor será removido do Caixa e do Financeiro.')) return;
   await apiDelete(`/ordens/${ordemId}/pagamento/${pagamentoId}`);
-  await atualizarModalPagamentos();
+  await atualizarPagamentosOS();
+}
+
+async function excluirOrdem(id) {
+  if (!confirm('Excluir OS? Todos os pagamentos relacionados também serão removidos.')) return;
+  await apiDelete('/ordens/' + id);
+  carregarOrdens();
 }
 
 // ============================================
-// GERAR PDF DA OS
+// MODAL DE ENVIO
 // ============================================
 
-async function gerarPDFOrdem(id) {
+async function abrirModalEnvio(id) {
   try {
     const lista = await apiGet('/ordens');
     const o = lista.find(x => x.id === id);
     if (!o) return alert('OS não encontrada');
 
-    if (!window.jspdf || !window.jspdf.jsPDF) {
-      alert('Biblioteca de PDF ainda não carregou. Verifique sua conexão e tente de novo.');
-      return;
-    }
+    osAtual = o;
 
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
+    document.getElementById('envio-os-id').textContent = o.id;
+    document.getElementById('envio-cliente-nome').textContent = o.cliente_nome || '-';
+    document.getElementById('envio-os-status').textContent = o.status || '-';
+
+    let tel = (o.cliente_telefone || '').replace(/\D/g, '');
+    if (tel && !tel.startsWith('55')) tel = '55' + tel;
+    document.getElementById('envio-telefone').value = tel;
+
+    const temGarantia = !!o.garantia_ate;
+    const cbGarantia = document.getElementById('envio-pdf-garantia');
+    cbGarantia.disabled = !temGarantia;
+    cbGarantia.checked = temGarantia;
+
+    document.getElementById('envio-pdf-os').checked = true;
+    document.getElementById('envio-whatsapp').checked = true;
 
     const pago = o.valor_pago || 0;
     const total = o.valor || 0;
     const falta = Math.max(total - pago, 0);
     const quitado = o.quitado === 1;
 
-    // CABEÇALHO
-    doc.setFillColor(0, 138, 125);
-    doc.rect(0, 0, 210, 28, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(20);
-    doc.setFont(undefined, 'bold');
-    doc.text('TechGest', 15, 13);
-    doc.setFontSize(10);
-    doc.setFont(undefined, 'normal');
-    doc.text('Sistema de Gestao para Assistencia Tecnica', 15, 20);
-    doc.text('Garagem Tech', 15, 25);
-    doc.setFontSize(14);
-    doc.setFont(undefined, 'bold');
-    doc.text('OS #' + o.id, 195, 15, { align: 'right' });
+    let statusPag = 'Total: ' + formatMoney(total);
+    if (quitado) statusPag += ' (QUITADO)';
+    else if (pago > 0) statusPag += ' | Pago: ' + formatMoney(pago) + ' | Falta: ' + formatMoney(falta);
 
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(11);
-    doc.setFont(undefined, 'normal');
+    const msg = `Olá ${o.cliente_nome || 'cliente'}!
 
-    let y = 40;
-    doc.setFont(undefined, 'bold');
-    doc.text('Status:', 15, y);
-    doc.setFont(undefined, 'normal');
-    doc.text(o.status || '-', 40, y);
-    doc.setFont(undefined, 'bold');
-    doc.text('Data entrada:', 120, y);
-    doc.setFont(undefined, 'normal');
-    doc.text(formatDate(o.data_entrada), 155, y);
+Sua OS #${o.id} - ${o.aparelho || 'aparelho'} está com status: *${o.status}*
 
-    y += 7;
-    doc.setFont(undefined, 'bold');
-    doc.text('Funcionario:', 15, y);
-    doc.setFont(undefined, 'normal');
-    doc.text(o.funcionario_nome || '-', 40, y);
-    doc.setFont(undefined, 'bold');
-    doc.text('Data saida:', 120, y);
-    doc.setFont(undefined, 'normal');
-    doc.text(o.data_saida ? formatDate(o.data_saida) : '-', 155, y);
+Serviço realizado: ${o.servico_realizado || '-'}
+Valor: ${statusPag}
 
-    y += 8;
-    doc.setDrawColor(200, 200, 200);
-    doc.line(15, y, 195, y);
-    y += 8;
+Qualquer dúvida, estamos à disposição!
 
-    // CLIENTE
-    doc.setFillColor(230, 245, 243);
-    doc.rect(15, y - 5, 180, 7, 'F');
-    doc.setFont(undefined, 'bold');
-    doc.setFontSize(11);
-    doc.text('DADOS DO CLIENTE', 15, y);
-    y += 8;
+Att,
+*Garagem Tech*`;
 
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(10);
-    doc.text('Nome: ' + (o.cliente_nome || '-'), 15, y);
-    y += 6;
+    document.getElementById('envio-mensagem').value = msg;
+    document.getElementById('modal-envio').classList.add('active');
+  } catch (err) {
+    alert('Erro ao abrir envio: ' + err.message);
+  }
+}
 
-    try {
-      const cliente = await apiGet('/clientes/' + o.cliente_id);
-      if (cliente) {
-        doc.text('Telefone: ' + (cliente.telefone || '-'), 15, y);
-        doc.text('CPF: ' + (cliente.cpf || '-'), 110, y);
-        y += 6;
-        doc.text('E-mail: ' + (cliente.email || '-'), 15, y);
-        y += 6;
-        doc.text('Endereco: ' + (cliente.endereco || '-'), 15, y);
-        y += 6;
-      }
-    } catch (e) {}
+function fecharModalEnvio() {
+  const modal = document.getElementById('modal-envio');
+  if (modal) modal.classList.remove('active');
+}
 
-    y += 4;
+async function executarEnvio() {
+  if (!osAtual) return;
 
-    // APARELHO
-    doc.setFillColor(230, 245, 243);
-    doc.rect(15, y - 5, 180, 7, 'F');
-    doc.setFont(undefined, 'bold');
-    doc.setFontSize(11);
-    doc.text('DADOS DO APARELHO', 15, y);
-    y += 8;
+  const o = osAtual;
+  const enviarPdfOs = document.getElementById('envio-pdf-os').checked;
+  const enviarPdfGarantia = document.getElementById('envio-pdf-garantia').checked;
+  const abrirWhats = document.getElementById('envio-whatsapp').checked;
+  const telefone = document.getElementById('envio-telefone').value.replace(/\D/g, '');
+  const mensagem = document.getElementById('envio-mensagem').value;
 
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(10);
-    doc.text('Aparelho: ' + (o.aparelho || '-'), 15, y);
-    doc.text('Marca: ' + (o.marca || '-'), 110, y);
-    y += 6;
-    doc.text('Modelo: ' + (o.modelo || '-'), 15, y);
-    doc.text('IMEI: ' + (o.imei || '-'), 110, y);
-    y += 6;
-    doc.text('N Serie: ' + (o.numero_serie || '-'), 15, y);
-    y += 8;
+  if (!enviarPdfOs && !enviarPdfGarantia && !abrirWhats) {
+    alert('Selecione pelo menos uma opção.');
+    return;
+  }
 
-    // DESCRICAO
-    doc.setFillColor(230, 245, 243);
-    doc.rect(15, y - 5, 180, 7, 'F');
-    doc.setFont(undefined, 'bold');
-    doc.setFontSize(11);
-    doc.text('DESCRICAO DO SERVICO', 15, y);
-    y += 8;
+  const btn = document.getElementById('btn-executar-envio');
+  const textoOriginal = btn.textContent;
+  btn.textContent = 'Gerando...';
+  btn.disabled = true;
 
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(10);
-    doc.setFont(undefined, 'bold');
-    doc.text('Defeito relatado:', 15, y);
-    y += 5;
-    doc.setFont(undefined, 'normal');
-    const defeito = doc.splitTextToSize(o.defeito || '-', 175);
-    doc.text(defeito, 15, y);
-    y += defeito.length * 5 + 3;
-
-    doc.setFont(undefined, 'bold');
-    doc.text('Servico realizado:', 15, y);
-    y += 5;
-    doc.setFont(undefined, 'normal');
-    const servico = doc.splitTextToSize(o.servico_realizado || '-', 175);
-    doc.text(servico, 15, y);
-    y += servico.length * 5 + 3;
-
-    doc.setFont(undefined, 'bold');
-    doc.text('Pecas utilizadas:', 15, y);
-    y += 5;
-    doc.setFont(undefined, 'normal');
-    const pecas = doc.splitTextToSize(o.pecas_utilizadas || '-', 175);
-    doc.text(pecas, 15, y);
-    y += pecas.length * 5 + 5;
-
-    // VALORES
-    doc.setFillColor(0, 138, 125);
-    doc.setTextColor(255, 255, 255);
-    doc.rect(15, y - 5, 180, 7, 'F');
-    doc.setFont(undefined, 'bold');
-    doc.setFontSize(11);
-    doc.text('VALORES', 15, y);
-    y += 10;
-
-    doc.setTextColor(0, 0, 0);
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(11);
-    doc.text('Valor Total:', 15, y);
-    doc.setFont(undefined, 'bold');
-    doc.text(formatMoney(total), 195, y, { align: 'right' });
-    y += 7;
-
-    doc.setFont(undefined, 'normal');
-    doc.text('Valor Pago:', 15, y);
-    doc.setFont(undefined, 'bold');
-    doc.text(formatMoney(pago), 195, y, { align: 'right' });
-    y += 7;
-
-    doc.setFont(undefined, 'normal');
-    doc.text('Falta Pagar:', 15, y);
-    doc.setFont(undefined, 'bold');
-    if (quitado) {
-      doc.setTextColor(16, 185, 129);
-      doc.text('QUITADO', 195, y, { align: 'right' });
-    } else {
-      doc.setTextColor(239, 68, 68);
-      doc.text(formatMoney(falta), 195, y, { align: 'right' });
+  try {
+    if (enviarPdfOs) {
+      await gerarPDFOrdem(o.id);
+      await new Promise(r => setTimeout(r, 500));
     }
-    doc.setTextColor(0, 0, 0);
 
-    // RODAPE
-    const alturaPagina = doc.internal.pageSize.height;
-    doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
-    doc.text(
-      'Documento gerado em ' + new Date().toLocaleString('pt-BR') + ' pelo sistema TechGest',
-      105,
-      alturaPagina - 10,
-      { align: 'center' }
-    );
+    if (enviarPdfGarantia && o.garantia_ate) {
+      await gerarPDFGarantia(o.id);
+      await new Promise(r => setTimeout(r, 500));
+    }
 
-    const nomeCliente = (o.cliente_nome || 'cliente').replace(/[^a-zA-Z0-9]/g, '-');
-    doc.save('OS-' + o.id + '-' + nomeCliente + '.pdf');
+    if (abrirWhats && telefone) {
+      const url = 'https://wa.me/' + telefone + '?text=' + encodeURIComponent(mensagem);
+      window.open(url, '_blank');
+    }
+
+    fecharModalEnvio();
+
+    let aviso = 'Documentos gerados com sucesso!\n\n';
+    if (enviarPdfOs) aviso += '- PDF da OS baixado na pasta Downloads\n';
+    if (enviarPdfGarantia) aviso += '- PDF de Garantia baixado na pasta Downloads\n';
+    if (abrirWhats && telefone) aviso += '- WhatsApp aberto em nova aba\n';
+    aviso += '\nAgora:\n1. Va na conversa do WhatsApp\n2. Clique no clip\n3. Escolha os PDFs baixados\n4. Enviar';
+    alert(aviso);
 
   } catch (err) {
-    alert('Erro ao gerar PDF: ' + err.message);
+    alert('Erro ao enviar: ' + err.message);
     console.error(err);
+  } finally {
+    btn.textContent = textoOriginal;
+    btn.disabled = false;
   }
+}
+
+// ============================================
+// PDF DA OS
+// ============================================
+
+async function gerarPDFOrdem(id) {
+  const lista = await apiGet('/ordens');
+  const o = lista.find(x => x.id === id);
+  if (!o) throw new Error('OS não encontrada');
+
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    throw new Error('Biblioteca de PDF não carregou.');
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  const pago = o.valor_pago || 0;
+  const total = o.valor || 0;
+  const falta = Math.max(total - pago, 0);
+  const quitado = o.quitado === 1;
+
+  doc.setFillColor(0, 138, 125);
+  doc.rect(0, 0, 210, 28, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(20);
+  doc.setFont(undefined, 'bold');
+  doc.text('TechGest', 15, 13);
+  doc.setFontSize(10);
+  doc.setFont(undefined, 'normal');
+  doc.text('Sistema de Gestao para Assistencia Tecnica', 15, 20);
+  doc.text('Garagem Tech', 15, 25);
+  doc.setFontSize(14);
+  doc.setFont(undefined, 'bold');
+  doc.text('OS #' + o.id, 195, 15, { align: 'right' });
+
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(11);
+  doc.setFont(undefined, 'normal');
+
+  let y = 40;
+  doc.setFont(undefined, 'bold');
+  doc.text('Status:', 15, y);
+  doc.setFont(undefined, 'normal');
+  doc.text(o.status || '-', 40, y);
+  doc.setFont(undefined, 'bold');
+  doc.text('Data entrada:', 120, y);
+  doc.setFont(undefined, 'normal');
+  doc.text(formatDate(o.data_entrada), 155, y);
+
+  y += 7;
+  doc.setFont(undefined, 'bold');
+  doc.text('Funcionario:', 15, y);
+  doc.setFont(undefined, 'normal');
+  doc.text(o.funcionario_nome || '-', 40, y);
+  doc.setFont(undefined, 'bold');
+  doc.text('Data saida:', 120, y);
+  doc.setFont(undefined, 'normal');
+  doc.text(o.data_saida ? formatDate(o.data_saida) : '-', 155, y);
+
+  y += 8;
+  doc.setDrawColor(200, 200, 200);
+  doc.line(15, y, 195, y);
+  y += 8;
+
+  doc.setFillColor(230, 245, 243);
+  doc.rect(15, y - 5, 180, 7, 'F');
+  doc.setFont(undefined, 'bold');
+  doc.setFontSize(11);
+  doc.text('DADOS DO CLIENTE', 15, y);
+  y += 8;
+
+  doc.setFont(undefined, 'normal');
+  doc.setFontSize(10);
+  doc.text('Nome: ' + (o.cliente_nome || '-'), 15, y);
+  y += 6;
+
+  try {
+    const cliente = await apiGet('/clientes/' + o.cliente_id);
+    if (cliente) {
+      doc.text('Telefone: ' + (cliente.telefone || '-'), 15, y);
+      doc.text('CPF: ' + (cliente.cpf || '-'), 110, y);
+      y += 6;
+      doc.text('E-mail: ' + (cliente.email || '-'), 15, y);
+      y += 6;
+      doc.text('Endereco: ' + (cliente.endereco || '-'), 15, y);
+      y += 6;
+    }
+  } catch (e) {}
+
+  y += 4;
+
+  doc.setFillColor(230, 245, 243);
+  doc.rect(15, y - 5, 180, 7, 'F');
+  doc.setFont(undefined, 'bold');
+  doc.setFontSize(11);
+  doc.text('DADOS DO APARELHO', 15, y);
+  y += 8;
+
+  doc.setFont(undefined, 'normal');
+  doc.setFontSize(10);
+  doc.text('Aparelho: ' + (o.aparelho || '-'), 15, y);
+  doc.text('Marca: ' + (o.marca || '-'), 110, y);
+  y += 6;
+  doc.text('Modelo: ' + (o.modelo || '-'), 15, y);
+  doc.text('IMEI: ' + (o.imei || '-'), 110, y);
+  y += 6;
+  doc.text('N Serie: ' + (o.numero_serie || '-'), 15, y);
+  y += 8;
+
+  doc.setFillColor(230, 245, 243);
+  doc.rect(15, y - 5, 180, 7, 'F');
+  doc.setFont(undefined, 'bold');
+  doc.setFontSize(11);
+  doc.text('DESCRICAO DO SERVICO', 15, y);
+  y += 8;
+
+  doc.setFont(undefined, 'normal');
+  doc.setFontSize(10);
+  doc.setFont(undefined, 'bold');
+  doc.text('Defeito relatado:', 15, y);
+  y += 5;
+  doc.setFont(undefined, 'normal');
+  const defeito = doc.splitTextToSize(o.defeito || '-', 175);
+  doc.text(defeito, 15, y);
+  y += defeito.length * 5 + 3;
+
+  doc.setFont(undefined, 'bold');
+  doc.text('Servico realizado:', 15, y);
+  y += 5;
+  doc.setFont(undefined, 'normal');
+  const servico = doc.splitTextToSize(o.servico_realizado || '-', 175);
+  doc.text(servico, 15, y);
+  y += servico.length * 5 + 3;
+
+  doc.setFont(undefined, 'bold');
+  doc.text('Pecas utilizadas:', 15, y);
+  y += 5;
+  doc.setFont(undefined, 'normal');
+  const pecas = doc.splitTextToSize(o.pecas_utilizadas || '-', 175);
+  doc.text(pecas, 15, y);
+  y += pecas.length * 5 + 5;
+
+  doc.setFillColor(0, 138, 125);
+  doc.setTextColor(255, 255, 255);
+  doc.rect(15, y - 5, 180, 7, 'F');
+  doc.setFont(undefined, 'bold');
+  doc.setFontSize(11);
+  doc.text('VALORES', 15, y);
+  y += 10;
+
+  doc.setTextColor(0, 0, 0);
+  doc.setFont(undefined, 'normal');
+  doc.setFontSize(11);
+  doc.text('Valor Total:', 15, y);
+  doc.setFont(undefined, 'bold');
+  doc.text(formatMoney(total), 195, y, { align: 'right' });
+  y += 7;
+
+  doc.setFont(undefined, 'normal');
+  doc.text('Valor Pago:', 15, y);
+  doc.setFont(undefined, 'bold');
+  doc.text(formatMoney(pago), 195, y, { align: 'right' });
+  y += 7;
+
+  doc.setFont(undefined, 'normal');
+  doc.text('Falta Pagar:', 15, y);
+  doc.setFont(undefined, 'bold');
+  if (quitado) {
+    doc.setTextColor(16, 185, 129);
+    doc.text('QUITADO', 195, y, { align: 'right' });
+  } else {
+    doc.setTextColor(239, 68, 68);
+    doc.text(formatMoney(falta), 195, y, { align: 'right' });
+  }
+  doc.setTextColor(0, 0, 0);
+
+  const alturaPagina = doc.internal.pageSize.height;
+  doc.setFontSize(8);
+  doc.setTextColor(150, 150, 150);
+  doc.text(
+    'Documento gerado em ' + new Date().toLocaleString('pt-BR') + ' pelo sistema TechGest',
+    105,
+    alturaPagina - 10,
+    { align: 'center' }
+  );
+
+  const nomeCliente = (o.cliente_nome || 'cliente').replace(/[^a-zA-Z0-9]/g, '-');
+  doc.save('OS-' + o.id + '-' + nomeCliente + '.pdf');
+}
+
+// ============================================
+// PDF DE GARANTIA
+// ============================================
+
+async function gerarPDFGarantia(id) {
+  const lista = await apiGet('/ordens');
+  const o = lista.find(x => x.id === id);
+  if (!o) throw new Error('OS não encontrada');
+
+  if (!o.garantia_ate) {
+    throw new Error('Esta OS ainda não tem garantia.');
+  }
+
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    throw new Error('Biblioteca de PDF não carregou.');
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  const entregue = new Date(o.data_saida);
+  const expira = new Date(o.garantia_ate);
+
+  doc.setFillColor(0, 138, 125);
+  doc.rect(0, 0, 210, 28, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(18);
+  doc.setFont(undefined, 'bold');
+  doc.text('TERMO DE GARANTIA', 15, 13);
+  doc.setFontSize(10);
+  doc.setFont(undefined, 'normal');
+  doc.text('Garagem Tech - Assistencia Tecnica', 15, 21);
+  doc.setFontSize(14);
+  doc.setFont(undefined, 'bold');
+  doc.text('OS #' + o.id, 195, 15, { align: 'right' });
+
+  doc.setTextColor(0, 0, 0);
+  let y = 40;
+
+  doc.setFillColor(230, 245, 243);
+  doc.rect(15, y - 5, 180, 7, 'F');
+  doc.setFont(undefined, 'bold');
+  doc.setFontSize(11);
+  doc.text('CLIENTE', 15, y);
+  y += 8;
+
+  doc.setFont(undefined, 'normal');
+  doc.setFontSize(10);
+  doc.text('Nome: ' + (o.cliente_nome || '-'), 15, y);
+  y += 6;
+
+  try {
+    const cliente = await apiGet('/clientes/' + o.cliente_id);
+    if (cliente) {
+      doc.text('Telefone: ' + (cliente.telefone || '-'), 15, y);
+      doc.text('CPF: ' + (cliente.cpf || '-'), 110, y);
+      y += 6;
+    }
+  } catch (e) {}
+
+  y += 4;
+
+  doc.setFillColor(230, 245, 243);
+  doc.rect(15, y - 5, 180, 7, 'F');
+  doc.setFont(undefined, 'bold');
+  doc.setFontSize(11);
+  doc.text('APARELHO', 15, y);
+  y += 8;
+
+  doc.setFont(undefined, 'normal');
+  doc.setFontSize(10);
+  doc.text('Aparelho: ' + (o.aparelho || '-'), 15, y);
+  doc.text('Marca: ' + (o.marca || '-'), 110, y);
+  y += 6;
+  doc.text('Modelo: ' + (o.modelo || '-'), 15, y);
+  doc.text('IMEI: ' + (o.imei || '-'), 110, y);
+  y += 6;
+  doc.text('N Serie: ' + (o.numero_serie || '-'), 15, y);
+  y += 10;
+
+  doc.setFillColor(230, 245, 243);
+  doc.rect(15, y - 5, 180, 7, 'F');
+  doc.setFont(undefined, 'bold');
+  doc.setFontSize(11);
+  doc.text('PERIODO DE GARANTIA', 15, y);
+  y += 8;
+
+  doc.setFont(undefined, 'normal');
+  doc.setFontSize(10);
+  doc.text('Data de entrega:', 15, y);
+  doc.setFont(undefined, 'bold');
+  doc.text(entregue.toLocaleDateString('pt-BR'), 60, y);
+  y += 6;
+
+  doc.setFont(undefined, 'normal');
+  doc.text('Garantia valida ate:', 15, y);
+  doc.setFont(undefined, 'bold');
+  doc.setTextColor(0, 138, 125);
+  doc.text(expira.toLocaleDateString('pt-BR'), 60, y);
+  doc.setTextColor(0, 0, 0);
+  y += 12;
+
+  doc.setFillColor(230, 245, 243);
+  doc.rect(15, y - 5, 180, 7, 'F');
+  doc.setFont(undefined, 'bold');
+  doc.setFontSize(11);
+  doc.text('TERMOS', 15, y);
+  y += 8;
+
+  doc.setFont(undefined, 'normal');
+  doc.setFontSize(10);
+
+  const termo1 = doc.splitTextToSize(
+    'A Garagem Tech concede garantia de 6 (seis) meses sobre os servicos realizados nesta ordem, contados a partir da data de entrega do aparelho ao cliente.',
+    180
+  );
+  doc.text(termo1, 15, y);
+  y += termo1.length * 5 + 3;
+
+  doc.setFont(undefined, 'bold');
+  doc.text('A garantia cobre:', 15, y);
+  y += 5;
+  doc.setFont(undefined, 'normal');
+  doc.text('  - Defeitos relacionados ao servico executado', 15, y);
+  y += 5;
+  doc.text('  - Problemas nas pecas substituidas pela Garagem Tech', 15, y);
+  y += 8;
+
+  doc.setFont(undefined, 'bold');
+  doc.text('A garantia NAO cobre:', 15, y);
+  y += 5;
+  doc.setFont(undefined, 'normal');
+  doc.text('  - Danos por mau uso, quedas ou contato com liquidos', 15, y);
+  y += 5;
+  doc.text('  - Violacao do aparelho por terceiros', 15, y);
+  y += 5;
+  doc.text('  - Desgaste natural do produto', 15, y);
+  y += 10;
+
+  const termo2 = doc.splitTextToSize(
+    'Para acionar a garantia, o cliente deve apresentar este documento junto com o aparelho.',
+    180
+  );
+  doc.text(termo2, 15, y);
+  y += termo2.length * 5 + 15;
+
+  doc.setDrawColor(0, 0, 0);
+  doc.line(60, y, 150, y);
+  y += 5;
+  doc.setFont(undefined, 'bold');
+  doc.setFontSize(11);
+  doc.text('Garagem Tech', 105, y, { align: 'center' });
+  y += 5;
+  doc.setFont(undefined, 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(100, 100, 100);
+  doc.text('Assistencia Tecnica Especializada', 105, y, { align: 'center' });
+
+  const alturaPagina = doc.internal.pageSize.height;
+  doc.setFontSize(8);
+  doc.setTextColor(150, 150, 150);
+  doc.text(
+    'Documento gerado em ' + new Date().toLocaleString('pt-BR') + ' pelo sistema TechGest',
+    105,
+    alturaPagina - 10,
+    { align: 'center' }
+  );
+
+  const nomeCliente = (o.cliente_nome || 'cliente').replace(/[^a-zA-Z0-9]/g, '-');
+  doc.save('Garantia-OS-' + o.id + '-' + nomeCliente + '.pdf');
 }
 
 // ============================================
@@ -408,6 +715,8 @@ document.addEventListener('DOMContentLoaded', () => {
       form.reset();
       document.getElementById('ordem-id').value = '';
       document.getElementById('cancel-ordem').style.display = 'none';
+      document.getElementById('pagamentos-os-section').style.display = 'none';
+      osAtual = null;
       carregarOrdens();
     });
 
@@ -416,7 +725,9 @@ document.addEventListener('DOMContentLoaded', () => {
       btnCancel.addEventListener('click', () => {
         form.reset();
         document.getElementById('ordem-id').value = '';
-        btnCancel.style.display = 'none';
+        document.getElementById('cancel-ordem').style.display = 'none';
+        document.getElementById('pagamentos-os-section').style.display = 'none';
+        osAtual = null;
       });
     }
   }
@@ -425,7 +736,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (formPgto) {
     formPgto.addEventListener('submit', async (e) => {
       e.preventDefault();
-      if (!osModalAtual) return;
+      if (!osAtual) return;
 
       const dados = {
         valor: parseFloat(document.getElementById('pagamento-valor').value) || 0,
@@ -439,16 +750,21 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      await apiPost(`/ordens/${osModalAtual}/pagamento`, dados);
+      await apiPost(`/ordens/${osAtual}/pagamento`, dados);
       formPgto.reset();
-      await atualizarModalPagamentos();
+      await atualizarPagamentosOS();
+      carregarOrdens();
     });
   }
 
-  const modalPgto = document.getElementById('modal-pagamentos');
-  if (modalPgto) {
-    modalPgto.addEventListener('click', (e) => {
-      if (e.target === modalPgto) fecharModalPagamentos();
+  const modalEnvio = document.getElementById('modal-envio');
+  if (modalEnvio) {
+    modalEnvio.addEventListener('click', (e) => {
+      if (e.target === modalEnvio) fecharModalEnvio();
     });
   }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') fecharModalEnvio();
+  });
 });

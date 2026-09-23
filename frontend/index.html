@@ -196,8 +196,42 @@
           <button type="button" id="cancel-ordem" class="btn-secondary" style="display:none">Cancelar</button>
         </form>
       </div>
+
+      <!-- SEÇÃO DE PAGAMENTOS (aparece só ao editar) -->
+      <div class="form-box" id="pagamentos-os-section" style="display:none;">
+        <h2>Pagamentos da OS #<span id="pagamento-os-id"></span></h2>
+        <div id="pagamento-resumo" style="margin-bottom:16px; padding:12px; background:var(--cor-primaria-tint); border-radius:8px;"></div>
+
+        <h3 style="font-size:14px; margin-bottom:10px;">Registrar Novo Pagamento</h3>
+        <form id="form-pagamento">
+          <input type="number" step="0.01" placeholder="Valor" id="pagamento-valor" required />
+          <select id="pagamento-forma">
+            <option value="Dinheiro">Dinheiro</option>
+            <option value="PIX">PIX</option>
+            <option value="Cartão Débito">Cartão Débito</option>
+            <option value="Cartão Crédito">Cartão Crédito</option>
+            <option value="Boleto">Boleto</option>
+          </select>
+          <select id="pagamento-parcelas">
+            <option value="1">1x</option>
+            <option value="2">2x</option>
+            <option value="3">3x</option>
+            <option value="4">4x</option>
+            <option value="5">5x</option>
+            <option value="6">6x</option>
+            <option value="10">10x</option>
+            <option value="12">12x</option>
+          </select>
+          <input placeholder="Observação" id="pagamento-obs" />
+          <button type="submit">Registrar Pagamento</button>
+        </form>
+
+        <h3 style="font-size:14px; margin:20px 0 10px 0;">Histórico</h3>
+        <div id="pagamento-historico"></div>
+      </div>
+
       <table id="tabela-ordens">
-        <thead><tr><th>ID</th><th>Cliente</th><th>Aparelho</th><th>Funcionário</th><th>Status</th><th>Valor</th><th>Pago</th><th>Falta</th><th>Ações</th></tr></thead>
+        <thead><tr><th>ID</th><th>Cliente</th><th>Aparelho</th><th>Funcionário</th><th>Status</th><th>Valor</th><th>Falta</th><th>Garantia</th><th>Ações</th></tr></thead>
         <tbody></tbody>
       </table>
     </section>
@@ -282,11 +316,9 @@
       </table>
     </section>
 
-        <section class="view" id="view-caixa">
-      <!-- PAINEL DA SESSÃO ATUAL -->
+    <section class="view" id="view-caixa">
       <div id="caixa-sessao-painel" style="margin-bottom:24px;"></div>
 
-      <!-- CARDS DE SALDO GERAL -->
       <div class="cards-grid">
         <div class="card caixa"><h3>Saldo Atual do Caixa</h3><p id="caixa-saldo">R$ 0,00</p></div>
         <div class="card lucro"><h3>Total de Entradas</h3><p id="caixa-entradas">R$ 0,00</p></div>
@@ -414,42 +446,61 @@
     </div>
   </div>
 
-  <div class="modal-overlay" id="modal-pagamentos">
-    <div class="modal-box">
-      <h2>Pagamentos da OS #<span id="pagamento-os-id"></span></h2>
-      <div id="pagamento-resumo" style="margin-bottom:16px; padding:12px; background:var(--cor-primaria-tint); border-radius:8px;"></div>
-      <div class="form-box" style="margin-bottom:16px; box-shadow:none; padding:0;">
-        <h3 style="font-size:14px; margin-bottom:10px;">Registrar Novo Pagamento</h3>
-        <form id="form-pagamento">
-          <input type="number" step="0.01" placeholder="Valor" id="pagamento-valor" required />
-          <select id="pagamento-forma">
-            <option value="Dinheiro">Dinheiro</option>
-            <option value="PIX">PIX</option>
-            <option value="Cartão Débito">Cartão Débito</option>
-            <option value="Cartão Crédito">Cartão Crédito</option>
-            <option value="Boleto">Boleto</option>
-          </select>
-          <select id="pagamento-parcelas">
-            <option value="1">1x</option>
-            <option value="2">2x</option>
-            <option value="3">3x</option>
-            <option value="4">4x</option>
-            <option value="5">5x</option>
-            <option value="6">6x</option>
-            <option value="10">10x</option>
-            <option value="12">12x</option>
-          </select>
-          <input placeholder="Observação" id="pagamento-obs" />
-          <button type="submit">Registrar</button>
-        </form>
+  <div class="modal-overlay" id="modal-envio">
+    <div class="modal-box" style="max-width:600px;">
+      <h2>Enviar Documentos da OS #<span id="envio-os-id"></span></h2>
+
+      <div style="background:var(--cor-primaria-tint); padding:12px; border-radius:8px; margin-bottom:16px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+          <span>Cliente:</span>
+          <strong id="envio-cliente-nome">-</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span>Status:</span>
+          <strong id="envio-os-status">-</strong>
+        </div>
       </div>
-      <h3 style="font-size:14px; margin-bottom:10px;">Histórico</h3>
-      <div id="pagamento-historico"></div>
+
+      <label style="display:block; font-size:13px; color:var(--cor-texto-suave); text-transform:uppercase; margin-bottom:6px; font-weight:600;">
+        Telefone do WhatsApp (com DDD e código do país)
+      </label>
+      <input
+        type="text"
+        id="envio-telefone"
+        placeholder="Ex: 5598989293063"
+        style="width:100%; padding:10px 12px; border:1px solid var(--cor-borda-input); border-radius:8px; font-size:14px; margin-bottom:16px; background:var(--cor-fundo-card); color:var(--cor-texto);"
+      />
+
+      <h3 style="font-size:14px; margin-bottom:10px; color:var(--cor-texto);">O que enviar:</h3>
+      <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:14px;">
+          <input type="checkbox" id="envio-pdf-os" checked style="width:auto; margin:0;" />
+          PDF da Ordem de Serviço
+        </label>
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:14px;">
+          <input type="checkbox" id="envio-pdf-garantia" style="width:auto; margin:0;" />
+          PDF de Garantia (6 meses) — apenas se a OS já estiver entregue
+        </label>
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:14px;">
+          <input type="checkbox" id="envio-whatsapp" checked style="width:auto; margin:0;" />
+          Abrir WhatsApp com mensagem pronta
+        </label>
+      </div>
+
+      <h3 style="font-size:14px; margin-bottom:10px; color:var(--cor-texto);">Mensagem do WhatsApp (editável):</h3>
+      <textarea id="envio-mensagem" rows="8" style="width:100%; padding:10px 12px; border:1px solid var(--cor-borda-input); border-radius:8px; font-size:13px; font-family:inherit; background:var(--cor-fundo-card); color:var(--cor-texto); margin-bottom:16px; resize:vertical;"></textarea>
+
+      <div style="background:#FEF3C7; border-left:4px solid var(--cor-aviso); padding:12px; border-radius:8px; font-size:13px; color:#92400E; margin-bottom:16px;">
+        <strong>Como funciona:</strong> os PDFs serão baixados na pasta Downloads. Depois, no WhatsApp, clique no clip e escolha os arquivos.
+      </div>
+
       <div class="botoes">
-        <button class="btn-fechar" onclick="fecharModalPagamentos()">Fechar</button>
+        <button class="btn-fechar" onclick="fecharModalEnvio()">Cancelar</button>
+        <button class="btn-editar" id="btn-executar-envio" onclick="executarEnvio()">Enviar</button>
       </div>
     </div>
   </div>
+
   <div class="modal-overlay" id="modal-ver">
     <div class="modal-box">
       <h2 id="modal-ver-titulo">Detalhes</h2>
@@ -459,6 +510,7 @@
       </div>
     </div>
   </div>
+
   <div class="modal-overlay" id="modal-abrir-caixa">
     <div class="modal-box" style="max-width:500px;">
       <h2>Abrir Caixa</h2>
@@ -493,6 +545,7 @@
       </div>
     </div>
   </div>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="js/api.js"></script>
   <script src="js/clientes.js"></script>
