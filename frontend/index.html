@@ -60,6 +60,7 @@
       <button class="nav-item" data-view="despesasFixas">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2h16v20l-3-2-3 2-3-2-3 2-3-2z"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/></svg>
         <span>Despesas Fixas</span>
+
       </button>
       <button class="nav-item" data-view="relatorios">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="3" y1="20" x2="21" y2="20"/></svg>
@@ -69,21 +70,40 @@
   </aside>
 
   <main class="content">
+
     <header class="topbar">
       <h1 id="page-title">Dashboard</h1>
-      <button class="btn-tema" id="btn-tema" title="Alternar tema">
-        <svg id="icone-tema" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="5"/>
-          <line x1="12" y1="1" x2="12" y2="3"/>
-          <line x1="12" y1="21" x2="12" y2="23"/>
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-          <line x1="1" y1="12" x2="3" y2="12"/>
-          <line x1="21" y1="12" x2="23" y2="12"/>
-          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-        </svg>
-      </button>
+
+      <div class="topbar-direita">
+        <div class="busca-container">
+          <svg class="busca-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="text"
+            id="busca-global"
+            placeholder="Buscar clientes, OS, produtos..."
+            autocomplete="off"
+          />
+          <kbd class="busca-atalho">Ctrl+K</kbd>
+          <div class="busca-resultados" id="busca-resultados"></div>
+        </div>
+
+        <button class="btn-tema" id="btn-tema" title="Alternar tema">
+          <svg id="icone-tema" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/>
+            <line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+        </button>
+      </div>
     </header>
 
     <section class="view active" id="view-dashboard">
@@ -93,6 +113,7 @@
         <div class="card lucro"><h3>Lucro Vendas (Hoje)</h3><p id="dash-vendas">R$ 0,00</p></div>
         <div class="card caixa"><h3>Lucro Total (Hoje)</h3><p id="dash-total-hoje">R$ 0,00</p></div>
       </div>
+
       <h2 style="font-size:16px; margin-bottom:12px; color:var(--cor-texto-suave);">VISÃO GERAL</h2>
       <div class="cards-grid">
         <div class="card"><h3>Clientes</h3><p id="kpi-clientes">0</p></div>
@@ -100,7 +121,52 @@
         <div class="card"><h3>Total de Vendas</h3><p id="kpi-vendas">R$ 0,00</p></div>
         <div class="card caixa"><h3>Saldo em Caixa</h3><p id="kpi-caixa">R$ 0,00</p></div>
       </div>
-      <h2 style="margin-bottom:12px">Estoque Baixo</h2>
+
+      <div class="form-box" style="display:flex; justify-content:space-between; align-items:center;">
+        <h2 style="margin:0;">Análise Visual</h2>
+        <div style="display:flex; gap:8px;">
+          <button class="filtro-btn active" id="tipo-pizza" onclick="trocarTipoGrafico('pizza')">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+            <span>Pizza</span>
+          </button>
+          <button class="filtro-btn" id="tipo-barra" onclick="trocarTipoGrafico('barra')">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+            <span>Barra</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="graficos-grid">
+        <div class="grafico-card">
+          <h3>Vendas por Forma de Pagamento</h3>
+          <div class="grafico-wrapper">
+            <canvas id="grafico-formas"></canvas>
+          </div>
+        </div>
+
+        <div class="grafico-card">
+          <h3>Lucro: Assistência vs Vendas</h3>
+          <div class="grafico-wrapper">
+            <canvas id="grafico-lucro"></canvas>
+          </div>
+        </div>
+
+        <div class="grafico-card">
+          <h3>Entregas dos Últimos 6 Meses</h3>
+          <div class="grafico-wrapper">
+            <canvas id="grafico-entregas"></canvas>
+          </div>
+        </div>
+
+        <div class="grafico-card">
+          <h3>Top 5 Produtos Mais Vendidos</h3>
+          <div class="grafico-wrapper">
+            <canvas id="grafico-produtos"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <h2 style="margin-bottom:12px; margin-top:24px;">Estoque Baixo</h2>
       <div id="lista-estoque-baixo" class="lista"></div>
     </section>
 
@@ -388,12 +454,13 @@
           <h2 style="margin:0;">Extrato Financeiro</h2>
 
           <div style="display:flex; align-items:center; gap:12px;">
-            <div id="live-indicator" class="live-indicator">
+                        <div id="live-indicator" class="live-indicator">
               <span class="live-dot"></span>
               <span id="live-texto">Ao vivo</span>
             </div>
             <button id="btn-toggle-live" class="filtro-btn active" onclick="toggleAutoRefresh()" title="Ligar/Desligar atualização automática">
-              ⏸ Pausar
+              <svg id="btn-live-icon" class="btn-icon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+              <span id="btn-live-texto">Pausar</span>
             </button>
           </div>
 
@@ -420,30 +487,50 @@
                <input type="text" id="filtro-busca" placeholder="Buscar por descrição..." oninput="aplicarFiltroCustom()" />
       </div>
 
-      <div class="form-box">
+            <div class="form-box">
         <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
           <strong style="font-size:13px; color:var(--cor-texto-suave); text-transform:uppercase;">Ordenar por:</strong>
+
           <button class="filtro-btn ordenar-btn active" data-ordem="auto" onclick="aplicarOrdenacao('auto')">
-            ✨ Adaptativa
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 8l7-5 7 5M5 16l7 5 7-5"/></svg>
+            <span>Adaptativa</span>
           </button>
+
           <button class="filtro-btn ordenar-btn" data-ordem="data" data-dir="desc" onclick="aplicarOrdenacao('data')">
-            📅 Data
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span>Data</span>
           </button>
+
           <button class="filtro-btn ordenar-btn" data-ordem="valor" data-dir="desc" onclick="aplicarOrdenacao('valor')">
-            💰 Valor
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <span>Valor</span>
           </button>
+
           <button class="filtro-btn ordenar-btn" data-ordem="tipo" data-dir="desc" onclick="aplicarOrdenacao('tipo')">
-            🏷️ Tipo
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41L13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+            <span>Tipo</span>
           </button>
-                   <small id="ordenacao-atual" style="color:var(--cor-texto-suave); font-size:11px;"></small>
+
+          <small id="ordenacao-atual" style="color:var(--cor-texto-suave); font-size:11px;"></small>
+
           <div style="display:flex; gap:6px; margin-left:auto;">
-            <button class="filtro-btn" onclick="exportarPDF()" title="Baixar relatório em PDF">
-              📄 PDF
+
+            <button class="filtro-btn" onclick="abrirModalCalendario()" title="Abrir Calendário Anual">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span>Calendário</span>
             </button>
+
+            <button class="filtro-btn" onclick="exportarPDF()" title="Baixar relatório em PDF">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+              <span>PDF</span>
+            </button>
+
             <button class="filtro-btn" onclick="exportarCSV()" title="Baixar planilha (abre no Excel)">
-              📊 CSV
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v18H3z"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+              <span>CSV</span>
             </button>
           </div>
+        </div>
       </div>
 
       <div class="cards-grid">
@@ -573,6 +660,39 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="modal-calendario">
+    <div class="modal-box" style="max-width:1100px; width:95%; max-height:90vh;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:2px solid var(--cor-primaria-tint);">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <h2 style="margin:0; border:none; padding:0;">Calendário Anual</h2>
+          <select id="calendario-ano" onchange="carregarCalendario()" style="padding:6px 12px; border:1px solid var(--cor-borda-input); border-radius:8px; background:var(--cor-fundo-card); color:var(--cor-texto); font-size:13px;">
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+            <option value="2026">2026</option>
+            <option value="2027">2027</option>
+          </select>
+        </div>
+        <button class="btn-fechar" onclick="fecharModalCalendario()" style="padding:8px 16px; border:none; border-radius:8px; cursor:pointer; font-weight:600; background:#6b7280; color:#fff;">
+          Fechar
+        </button>
+      </div>
+
+      <div id="calendario-totais-ano" style="display:flex; gap:20px; font-size:13px; margin-bottom:16px; padding:12px 16px; background:var(--cor-primaria-tint); border-radius:8px;"></div>
+
+      <div class="calendario-grid" id="calendario-meses"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-dia">
+    <div class="modal-box" style="max-width:500px;">
+      <h2 id="modal-dia-titulo">Detalhes do Dia</h2>
+      <div id="modal-dia-conteudo"></div>
+      <div class="botoes">
+        <button class="btn-fechar" onclick="fecharModalDia()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="modal-ver">
     <div class="modal-box">
       <h2 id="modal-ver-titulo">Detalhes</h2>
@@ -618,7 +738,9 @@
     </div>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="js/busca.js"></script>
   <script src="js/api.js"></script>
   <script src="js/clientes.js"></script>
   <script src="js/funcionarios.js"></script>
@@ -632,6 +754,8 @@
   <script src="js/financeiro.js"></script>
   <script src="js/despesasFixas.js"></script>
   <script src="js/relatorios.js"></script>
+  <script src="js/graficos.js"></script>
+  <script src="js/calendario.js"></script>
   <script src="js/tema.js"></script>
   <script src="js/app.js"></script>
 </body>

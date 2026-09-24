@@ -15,7 +15,8 @@ const titulos = {
   caixa: 'Caixa',
   financeiro: 'Financeiro',
   despesasFixas: 'Despesas Fixas',
-  relatorios: 'Relatórios'
+  relatorios: 'Relatórios',
+  calendario: 'Calendário Anual'
 };
 
 document.querySelectorAll('.nav-item').forEach(btn => {

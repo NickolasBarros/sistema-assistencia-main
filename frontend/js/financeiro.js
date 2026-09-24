@@ -167,8 +167,8 @@ async function carregarExtrato(silencioso = false) {
   params.append('ordenar_por', ordenarFinal);
   params.append('direcao', direcaoFinal);
 
-  const label = document.getElementById('ordenacao-atual');
-  if (label) label.textContent = '📊 ' + labelAtual;
+   const label = document.getElementById('ordenacao-atual');
+  if (label) label.textContent = labelAtual;
 
   const query = params.toString();
   const url = '/financeiro/extrato' + (query ? '?' + query : '');
@@ -265,13 +265,17 @@ function toggleAutoRefresh() {
   contadorSegundos = 0;
 
   const btn = document.getElementById('btn-toggle-live');
+  const icone = document.getElementById('btn-live-icon');
+  const texto = document.getElementById('btn-live-texto');
 
   if (autoRefreshAtivo) {
-    btn.textContent = '⏸ Pausar';
+    texto.textContent = 'Pausar';
+    icone.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
     btn.classList.add('active');
     atualizarIndicador();
   } else {
-    btn.textContent = '▶ Retomar';
+    texto.textContent = 'Retomar';
+    icone.innerHTML = '<polygon points="6 3 20 12 6 21 6 3"/>';
     btn.classList.remove('active');
     atualizarIndicador();
   }
