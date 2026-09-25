@@ -232,6 +232,12 @@ async function abrirModalEnvio(id) {
     cbGarantia.disabled = !temGarantia;
     cbGarantia.checked = temGarantia;
 
+    // Carrega os modelos de garantia no dropdown
+    await preencherTermosGarantia();
+
+    // Mostra o seletor se o checkbox estiver marcado
+    toggleSeletorTermo();
+
     document.getElementById('envio-pdf-os').checked = true;
     document.getElementById('envio-whatsapp').checked = true;
 
@@ -244,6 +250,13 @@ async function abrirModalEnvio(id) {
     if (quitado) statusPag += ' (QUITADO)';
     else if (pago > 0) statusPag += ' | Pago: ' + formatMoney(pago) + ' | Falta: ' + formatMoney(falta);
 
+    // Busca nome da loja das configurações
+    let nomeLoja = 'Garagem Tech';
+    try {
+      const config = await apiGet('/configuracoes');
+      if (config && config.nome_loja) nomeLoja = config.nome_loja;
+    } catch (e) {}
+
     const msg = `Olá ${o.cliente_nome || 'cliente'}!
 
 Sua OS #${o.id} - ${o.aparelho || 'aparelho'} está com status: *${o.status}*
@@ -254,7 +267,7 @@ Valor: ${statusPag}
 Qualquer dúvida, estamos à disposição!
 
 Att,
-*Garagem Tech*`;
+*${nomeLoja}*`;
 
     document.getElementById('envio-mensagem').value = msg;
     document.getElementById('modal-envio').classList.add('active');
@@ -263,62 +276,47 @@ Att,
   }
 }
 
-function fecharModalEnvio() {
-  const modal = document.getElementById('modal-envio');
-  if (modal) modal.classList.remove('active');
+// ============================================
+// MODELOS DE GARANTIA
+// ============================================
+
+async function preencherTermosGarantia() {
+  try {
+    const termos = await apiGet('/termosGarantia');
+    const select = document.getElementById('envio-termo-garantia');
+    if (!select) return;
+
+    select.innerHTML = '';
+    const ativos = termos.filter(t => t.ativo !== 0);
+
+    if (ativos.length === 0) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'Nenhum modelo cadastrado';
+      select.appendChild(opt);
+      return;
+    }
+
+    ativos.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t.id;
+      opt.textContent = t.nome;
+      select.appendChild(opt);
+    });
+  } catch (err) {
+    console.error('Erro ao carregar termos:', err);
+  }
 }
 
-async function executarEnvio() {
-  if (!osAtual) return;
+function toggleSeletorTermo() {
+  const cb = document.getElementById('envio-pdf-garantia');
+  const container = document.getElementById('container-termo-garantia');
+  if (!cb || !container) return;
 
-  const o = osAtual;
-  const enviarPdfOs = document.getElementById('envio-pdf-os').checked;
-  const enviarPdfGarantia = document.getElementById('envio-pdf-garantia').checked;
-  const abrirWhats = document.getElementById('envio-whatsapp').checked;
-  const telefone = document.getElementById('envio-telefone').value.replace(/\D/g, '');
-  const mensagem = document.getElementById('envio-mensagem').value;
-
-  if (!enviarPdfOs && !enviarPdfGarantia && !abrirWhats) {
-    alert('Selecione pelo menos uma opção.');
-    return;
-  }
-
-  const btn = document.getElementById('btn-executar-envio');
-  const textoOriginal = btn.textContent;
-  btn.textContent = 'Gerando...';
-  btn.disabled = true;
-
-  try {
-    if (enviarPdfOs) {
-      await gerarPDFOrdem(o.id);
-      await new Promise(r => setTimeout(r, 500));
-    }
-
-    if (enviarPdfGarantia && o.garantia_ate) {
-      await gerarPDFGarantia(o.id);
-      await new Promise(r => setTimeout(r, 500));
-    }
-
-    if (abrirWhats && telefone) {
-      const url = 'https://wa.me/' + telefone + '?text=' + encodeURIComponent(mensagem);
-      window.open(url, '_blank');
-    }
-
-    fecharModalEnvio();
-
-    let aviso = 'Documentos gerados com sucesso!\n\n';
-    if (enviarPdfOs) aviso += '- PDF da OS baixado na pasta Downloads\n';
-    if (enviarPdfGarantia) aviso += '- PDF de Garantia baixado na pasta Downloads\n';
-    if (abrirWhats && telefone) aviso += '- WhatsApp aberto em nova aba\n';
-    aviso += '\nAgora:\n1. Va na conversa do WhatsApp\n2. Clique no clip\n3. Escolha os PDFs baixados\n4. Enviar';
-    alert(aviso);
-
-  } catch (err) {
-    alert('Erro ao enviar: ' + err.message);
-    console.error(err);
-  } finally {
-    btn.textContent = textoOriginal;
-    btn.disabled = false;
+  if (cb.checked && !cb.disabled) {
+    container.style.display = 'block';
+  } else {
+    container.style.display = 'none';
   }
 }
 
@@ -529,12 +527,33 @@ async function gerarPDFGarantia(id) {
     throw new Error('Biblioteca de PDF não carregou.');
   }
 
+  // Pega o termo escolhido no dropdown
+  const selectTermo = document.getElementById('envio-termo-garantia');
+  const termoId = selectTermo ? selectTermo.value : null;
+
+  if (!termoId) {
+    throw new Error('Nenhum modelo de garantia selecionado. Cadastre um em Configurações.');
+  }
+
+  // Busca o termo e as configurações
+  const termo = await apiGet('/termosGarantia/' + termoId);
+  if (!termo) throw new Error('Modelo de garantia não encontrado');
+
+  let nomeLoja = 'Garagem Tech';
+  let sloganLoja = 'Soluções Tecnológicas';
+  try {
+    const config = await apiGet('/configuracoes');
+    if (config.nome_loja) nomeLoja = config.nome_loja;
+    if (config.slogan_loja) sloganLoja = config.slogan_loja;
+  } catch (e) {}
+
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
   const entregue = new Date(o.data_saida);
   const expira = new Date(o.garantia_ate);
 
+  // ============ CABEÇALHO ============
   doc.setFillColor(0, 138, 125);
   doc.rect(0, 0, 210, 28, 'F');
   doc.setTextColor(255, 255, 255);
@@ -543,7 +562,7 @@ async function gerarPDFGarantia(id) {
   doc.text('TERMO DE GARANTIA', 15, 13);
   doc.setFontSize(10);
   doc.setFont(undefined, 'normal');
-  doc.text('Garagem Tech - Assistencia Tecnica', 15, 21);
+  doc.text(nomeLoja + ' - ' + sloganLoja, 15, 21);
   doc.setFontSize(14);
   doc.setFont(undefined, 'bold');
   doc.text('OS #' + o.id, 195, 15, { align: 'right' });
@@ -551,6 +570,7 @@ async function gerarPDFGarantia(id) {
   doc.setTextColor(0, 0, 0);
   let y = 40;
 
+  // ============ CLIENTE ============
   doc.setFillColor(230, 245, 243);
   doc.rect(15, y - 5, 180, 7, 'F');
   doc.setFont(undefined, 'bold');
@@ -574,11 +594,12 @@ async function gerarPDFGarantia(id) {
 
   y += 4;
 
+  // ============ APARELHO ============
   doc.setFillColor(230, 245, 243);
   doc.rect(15, y - 5, 180, 7, 'F');
   doc.setFont(undefined, 'bold');
   doc.setFontSize(11);
-  doc.text('APARELHO', 15, y);
+  doc.text('APARELHO / SERVIÇO', 15, y);
   y += 8;
 
   doc.setFont(undefined, 'normal');
@@ -592,6 +613,7 @@ async function gerarPDFGarantia(id) {
   doc.text('N Serie: ' + (o.numero_serie || '-'), 15, y);
   y += 10;
 
+  // ============ PERÍODO ============
   doc.setFillColor(230, 245, 243);
   doc.rect(15, y - 5, 180, 7, 'F');
   doc.setFont(undefined, 'bold');
@@ -612,8 +634,19 @@ async function gerarPDFGarantia(id) {
   doc.setTextColor(0, 138, 125);
   doc.text(expira.toLocaleDateString('pt-BR'), 60, y);
   doc.setTextColor(0, 0, 0);
+
+  y += 6;
+  doc.setFont(undefined, 'normal');
+  const tempoTexto = termo.tempo_dias >= 365
+    ? Math.round(termo.tempo_dias / 365) + ' ano(s)'
+    : termo.tempo_dias >= 30
+      ? Math.round(termo.tempo_dias / 30) + ' mes(es)'
+      : termo.tempo_dias + ' dias';
+  doc.text('Periodo:', 15, y);
+  doc.text(tempoTexto + ' (' + termo.tempo_dias + ' dias)', 60, y);
   y += 12;
 
+  // ============ TERMOS (do modelo escolhido) ============
   doc.setFillColor(230, 245, 243);
   doc.rect(15, y - 5, 180, 7, 'F');
   doc.setFont(undefined, 'bold');
@@ -622,54 +655,49 @@ async function gerarPDFGarantia(id) {
   y += 8;
 
   doc.setFont(undefined, 'normal');
-  doc.setFontSize(10);
+  doc.setFontSize(9.5);
 
-  const termo1 = doc.splitTextToSize(
-    'A Garagem Tech concede garantia de 6 (seis) meses sobre os servicos realizados nesta ordem, contados a partir da data de entrega do aparelho ao cliente.',
-    180
-  );
-  doc.text(termo1, 15, y);
-  y += termo1.length * 5 + 3;
+  // Quebra o texto em linhas que caibam na largura
+  const paragrafos = (termo.texto || '').split('\n');
+  paragrafos.forEach(par => {
+    if (!par.trim()) { y += 3; return; }
 
-  doc.setFont(undefined, 'bold');
-  doc.text('A garantia cobre:', 15, y);
-  y += 5;
-  doc.setFont(undefined, 'normal');
-  doc.text('  - Defeitos relacionados ao servico executado', 15, y);
-  y += 5;
-  doc.text('  - Problemas nas pecas substituidas pela Garagem Tech', 15, y);
-  y += 8;
+    const linhas = doc.splitTextToSize(par.trim(), 180);
 
-  doc.setFont(undefined, 'bold');
-  doc.text('A garantia NAO cobre:', 15, y);
-  y += 5;
-  doc.setFont(undefined, 'normal');
-  doc.text('  - Danos por mau uso, quedas ou contato com liquidos', 15, y);
-  y += 5;
-  doc.text('  - Violacao do aparelho por terceiros', 15, y);
-  y += 5;
-  doc.text('  - Desgaste natural do produto', 15, y);
+    linhas.forEach(linha => {
+      // Quebra de página se necessário
+      if (y > 275) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(linha, 15, y);
+      y += 4.5;
+    });
+
+    y += 3;
+  });
+
   y += 10;
 
-  const termo2 = doc.splitTextToSize(
-    'Para acionar a garantia, o cliente deve apresentar este documento junto com o aparelho.',
-    180
-  );
-  doc.text(termo2, 15, y);
-  y += termo2.length * 5 + 15;
+  // ============ ASSINATURA ============
+  if (y > 250) {
+    doc.addPage();
+    y = 30;
+  }
 
   doc.setDrawColor(0, 0, 0);
   doc.line(60, y, 150, y);
   y += 5;
   doc.setFont(undefined, 'bold');
   doc.setFontSize(11);
-  doc.text('Garagem Tech', 105, y, { align: 'center' });
+  doc.text(nomeLoja, 105, y, { align: 'center' });
   y += 5;
   doc.setFont(undefined, 'normal');
   doc.setFontSize(9);
   doc.setTextColor(100, 100, 100);
-  doc.text('Assistencia Tecnica Especializada', 105, y, { align: 'center' });
+  doc.text(sloganLoja, 105, y, { align: 'center' });
 
+  // ============ RODAPÉ ============
   const alturaPagina = doc.internal.pageSize.height;
   doc.setFontSize(8);
   doc.setTextColor(150, 150, 150);
@@ -768,3 +796,70 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Escape') fecharModalEnvio();
   });
 });
+
+// ============================================
+// FECHAR MODAL DE ENVIO
+// ============================================
+
+function fecharModalEnvio() {
+  const modal = document.getElementById('modal-envio');
+  if (modal) modal.classList.remove('active');
+}
+
+// ============================================
+// EXECUTAR ENVIO
+// ============================================
+
+async function executarEnvio() {
+  if (!osAtual) return;
+
+  const o = osAtual;
+  const enviarPdfOs = document.getElementById('envio-pdf-os').checked;
+  const enviarPdfGarantia = document.getElementById('envio-pdf-garantia').checked;
+  const abrirWhats = document.getElementById('envio-whatsapp').checked;
+  const telefone = document.getElementById('envio-telefone').value.replace(/\D/g, '');
+  const mensagem = document.getElementById('envio-mensagem').value;
+
+  if (!enviarPdfOs && !enviarPdfGarantia && !abrirWhats) {
+    alert('Selecione pelo menos uma opção.');
+    return;
+  }
+
+  const btn = document.getElementById('btn-executar-envio');
+  const textoOriginal = btn.textContent;
+  btn.textContent = 'Gerando...';
+  btn.disabled = true;
+
+  try {
+    if (enviarPdfOs) {
+      await gerarPDFOrdem(o.id);
+      await new Promise(r => setTimeout(r, 500));
+    }
+
+    if (enviarPdfGarantia && o.garantia_ate) {
+      await gerarPDFGarantia(o.id);
+      await new Promise(r => setTimeout(r, 500));
+    }
+
+    if (abrirWhats && telefone) {
+      const url = 'https://wa.me/' + telefone + '?text=' + encodeURIComponent(mensagem);
+      window.open(url, '_blank');
+    }
+
+    fecharModalEnvio();
+
+    let aviso = 'Documentos gerados com sucesso!\n\n';
+    if (enviarPdfOs) aviso += '- PDF da OS: baixado na pasta Downloads\n';
+    if (enviarPdfGarantia) aviso += '- PDF de Garantia: baixado na pasta Downloads\n';
+    if (abrirWhats && telefone) aviso += '- WhatsApp: aberto em nova aba\n';
+    aviso += '\nAgora:\n1. Va na conversa do WhatsApp\n2. Clique no clip\n3. Escolha os PDFs baixados\n4. Enviar';
+    alert(aviso);
+
+  } catch (err) {
+    alert('Erro ao enviar: ' + err.message);
+    console.error(err);
+  } finally {
+    btn.textContent = textoOriginal;
+    btn.disabled = false;
+  }
+}

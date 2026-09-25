@@ -62,6 +62,10 @@
         <span>Despesas Fixas</span>
 
       </button>
+      <button class="nav-item" data-view="configuracoes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Configurações</span>
+      </button>
       <button class="nav-item" data-view="relatorios">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="3" y1="20" x2="21" y2="20"/></svg>
         <span>Relatórios</span>
@@ -592,6 +596,34 @@
         <div class="card caixa"><h3>Saldo</h3><p id="rel-saldo">R$ 0,00</p></div>
       </div>
     </section>
+    <section class="view" id="view-configuracoes">
+      <div class="form-box">
+        <h2>Dados da Loja</h2>
+        <form id="form-configuracoes">
+          <input placeholder="Nome da loja" id="conf-nome" required />
+          <input placeholder="Slogan / Subtítulo" id="conf-slogan" />
+          <input placeholder="Endereço (opcional)" id="conf-endereco" />
+          <input placeholder="Telefone (opcional)" id="conf-telefone" />
+          <button type="submit">Salvar Configurações</button>
+        </form>
+      </div>
+
+      <div class="form-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <h2 style="margin:0;">Modelos de Garantia</h2>
+          <button onclick="abrirModalTermo()" style="padding:10px 16px; border:none; border-radius:8px; background:var(--cor-primaria); color:#fff; cursor:pointer; font-weight:600;">
+            + Novo Modelo
+          </button>
+        </div>
+        <p style="color:var(--cor-texto-suave); font-size:13px; margin-bottom:16px;">
+          Cadastre diferentes modelos de termo de garantia. Ao gerar o PDF de uma OS, você escolhe qual usar.
+        </p>
+        <table id="tabela-termos">
+          <thead><tr><th>ID</th><th>Nome</th><th>Tempo</th><th>Ações</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
   </main>
 
   <div class="modal-overlay" id="modal-cliente">
@@ -636,10 +668,17 @@
           <input type="checkbox" id="envio-pdf-os" checked style="width:auto; margin:0;" />
           PDF da Ordem de Serviço
         </label>
-        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:14px;">
-          <input type="checkbox" id="envio-pdf-garantia" style="width:auto; margin:0;" />
-          PDF de Garantia (6 meses) — apenas se a OS já estiver entregue
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:14px;">
+          <input type="checkbox" id="envio-pdf-garantia" style="width:auto; margin:0;" onchange="toggleSeletorTermo()" />
+          PDF de Garantia — apenas se a OS já estiver entregue
         </label>
+
+        <div id="container-termo-garantia" style="display:none; margin-left:24px; margin-top:4px;">
+          <label style="display:block; font-size:12px; color:var(--cor-texto-suave); margin-bottom:4px;">
+            Modelo de garantia:
+          </label>
+          <select id="envio-termo-garantia" style="width:100%; padding:8px 12px; border:1px solid var(--cor-borda-input); border-radius:8px; font-size:13px; background:var(--cor-fundo-card); color:var(--cor-texto);"></select>
+        </div>
         <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:14px;">
           <input type="checkbox" id="envio-whatsapp" checked style="width:auto; margin:0;" />
           Abrir WhatsApp com mensagem pronta
@@ -680,6 +719,22 @@
       <div id="calendario-totais-ano" style="display:flex; gap:20px; font-size:13px; margin-bottom:16px; padding:12px 16px; background:var(--cor-primaria-tint); border-radius:8px;"></div>
 
       <div class="calendario-grid" id="calendario-meses"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-termo">
+    <div class="modal-box" style="max-width:700px;">
+      <h2 id="modal-termo-titulo">Novo Modelo de Garantia</h2>
+      <input type="hidden" id="termo-id" />
+      <div class="form-box" style="box-shadow:none; padding:0;">
+        <form id="form-termo">
+          <input placeholder="Nome do modelo (ex: Garantia de Serviços)" id="termo-nome" required />
+          <input type="number" placeholder="Tempo em dias (ex: 90, 180, 365)" id="termo-tempo" required />
+          <textarea placeholder="Texto completo do termo..." id="termo-texto" rows="15" style="grid-column:1/-1; min-height:250px;"></textarea>
+          <button type="submit">Salvar</button>
+          <button type="button" class="btn-secondary" onclick="fecharModalTermo()">Cancelar</button>
+        </form>
+      </div>
     </div>
   </div>
 
@@ -756,6 +811,7 @@
   <script src="js/relatorios.js"></script>
   <script src="js/graficos.js"></script>
   <script src="js/calendario.js"></script>
+  <script src="js/configuracoes.js"></script>
   <script src="js/tema.js"></script>
   <script src="js/app.js"></script>
 </body>

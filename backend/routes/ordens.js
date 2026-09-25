@@ -33,10 +33,10 @@ router.post('/', (req, res) => {
   let data_saida = null;
   let garantia_ate = null;
 
-  if (st === 'Entregue') {
+   if (st === 'Entregue') {
     data_saida = new Date().toISOString();
     const g = new Date();
-    g.setMonth(g.getMonth() + 6);
+    g.setDate(g.getDate() + 180);   // 180 dias = 6 meses (padrão)
     garantia_ate = g.toISOString();
   }
 
@@ -86,7 +86,7 @@ router.put('/:id', (req, res) => {
     if (status === 'Entregue' && antiga.status !== 'Entregue') {
       const agora = new Date();
       const fim = new Date();
-      fim.setMonth(fim.getMonth() + 6);
+      fim.setDate(fim.getDate() + 180);
       data_saida = agora.toISOString();
       garantia_ate = fim.toISOString();
     }

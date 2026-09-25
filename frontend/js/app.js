@@ -16,6 +16,7 @@ const titulos = {
   financeiro: 'Financeiro',
   despesasFixas: 'Despesas Fixas',
   relatorios: 'Relatórios',
+  configuracoes: 'Configurações',
   calendario: 'Calendário Anual'
 };
 
@@ -44,6 +45,7 @@ document.querySelectorAll('.nav-item').forEach(btn => {
     if (view === 'caixa') carregarCaixa();
     if (view === 'financeiro') carregarFinanceiro();
     if (view === 'despesasFixas') carregarDespesasFixas();
+    if (view === 'configuracoes') carregarConfiguracoes();
     if (view === 'relatorios') carregarRelatorios();
   });
 });

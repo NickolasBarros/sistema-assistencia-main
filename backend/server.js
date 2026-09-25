@@ -9,6 +9,8 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
 app.use('/api/busca', require('./routes/busca'));
+app.use('/api/configuracoes', require('./routes/configuracoes'));
+app.use('/api/termosGarantia', require('./routes/termosGarantia'));
 app.use('/api/clientes', require('./routes/clientes'));
 app.use('/api/funcionarios', require('./routes/funcionarios'));
 app.use('/api/produtos', require('./routes/produtos'));
