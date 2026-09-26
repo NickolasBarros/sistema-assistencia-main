@@ -19,7 +19,6 @@ async function carregarOrdens() {
     const falta = Math.max(total - pago, 0);
     const quitado = o.quitado === 1;
 
-    // BARRA DE GARANTIA
     let barraGarantia = '<small style="color:var(--cor-texto-suave);">—</small>';
     if (o.garantia_ate) {
       const inicio = new Date(o.data_saida).getTime();
@@ -109,7 +108,7 @@ async function verOrdem(id) {
 }
 
 // ============================================
-// EDITAR (com seção de pagamentos embutida)
+// EDITAR
 // ============================================
 
 async function editarOrdem(id) {
@@ -132,9 +131,19 @@ async function editarOrdem(id) {
   document.getElementById('ordem-pecas').value = o.pecas_utilizadas || '';
   document.getElementById('ordem-valor').value = o.valor || 0;
   document.getElementById('ordem-status').value = o.status || 'Aberta';
-  document.getElementById('cancel-ordem').style.display = 'inline-block';
 
-  // Mostra a seção de pagamentos
+  // Preenche a data de entrega
+  if (o.data_saida) {
+    const d = new Date(o.data_saida);
+    const ano = d.getFullYear();
+    const mes = String(d.getMonth() + 1).padStart(2, '0');
+    const dia = String(d.getDate()).padStart(2, '0');
+    document.getElementById('ordem-data-saida').value = `${ano}-${mes}-${dia}`;
+  } else {
+    document.getElementById('ordem-data-saida').value = '';
+  }
+
+  document.getElementById('cancel-ordem').style.display = 'inline-block';
   document.getElementById('pagamentos-os-section').style.display = 'block';
   document.getElementById('pagamento-os-id').textContent = o.id;
   await atualizarPagamentosOS();
@@ -232,10 +241,7 @@ async function abrirModalEnvio(id) {
     cbGarantia.disabled = !temGarantia;
     cbGarantia.checked = temGarantia;
 
-    // Carrega os modelos de garantia no dropdown
     await preencherTermosGarantia();
-
-    // Mostra o seletor se o checkbox estiver marcado
     toggleSeletorTermo();
 
     document.getElementById('envio-pdf-os').checked = true;
@@ -250,7 +256,6 @@ async function abrirModalEnvio(id) {
     if (quitado) statusPag += ' (QUITADO)';
     else if (pago > 0) statusPag += ' | Pago: ' + formatMoney(pago) + ' | Falta: ' + formatMoney(falta);
 
-    // Busca nome da loja das configurações
     let nomeLoja = 'Garagem Tech';
     try {
       const config = await apiGet('/configuracoes');
@@ -275,10 +280,6 @@ Att,
     alert('Erro ao abrir envio: ' + err.message);
   }
 }
-
-// ============================================
-// MODELOS DE GARANTIA
-// ============================================
 
 async function preencherTermosGarantia() {
   try {
@@ -312,12 +313,7 @@ function toggleSeletorTermo() {
   const cb = document.getElementById('envio-pdf-garantia');
   const container = document.getElementById('container-termo-garantia');
   if (!cb || !container) return;
-
-  if (cb.checked && !cb.disabled) {
-    container.style.display = 'block';
-  } else {
-    container.style.display = 'none';
-  }
+  container.style.display = (cb.checked && !cb.disabled) ? 'block' : 'none';
 }
 
 // ============================================
@@ -499,12 +495,7 @@ async function gerarPDFOrdem(id) {
   const alturaPagina = doc.internal.pageSize.height;
   doc.setFontSize(8);
   doc.setTextColor(150, 150, 150);
-  doc.text(
-    'Documento gerado em ' + new Date().toLocaleString('pt-BR') + ' pelo sistema TechGest',
-    105,
-    alturaPagina - 10,
-    { align: 'center' }
-  );
+  doc.text('Documento gerado em ' + new Date().toLocaleString('pt-BR') + ' pelo sistema TechGest', 105, alturaPagina - 10, { align: 'center' });
 
   const nomeCliente = (o.cliente_nome || 'cliente').replace(/[^a-zA-Z0-9]/g, '-');
   doc.save('OS-' + o.id + '-' + nomeCliente + '.pdf');
@@ -518,24 +509,13 @@ async function gerarPDFGarantia(id) {
   const lista = await apiGet('/ordens');
   const o = lista.find(x => x.id === id);
   if (!o) throw new Error('OS não encontrada');
+  if (!o.garantia_ate) throw new Error('Esta OS ainda não tem garantia.');
+  if (!window.jspdf || !window.jspdf.jsPDF) throw new Error('Biblioteca de PDF não carregou.');
 
-  if (!o.garantia_ate) {
-    throw new Error('Esta OS ainda não tem garantia.');
-  }
-
-  if (!window.jspdf || !window.jspdf.jsPDF) {
-    throw new Error('Biblioteca de PDF não carregou.');
-  }
-
-  // Pega o termo escolhido no dropdown
   const selectTermo = document.getElementById('envio-termo-garantia');
   const termoId = selectTermo ? selectTermo.value : null;
+  if (!termoId) throw new Error('Nenhum modelo de garantia selecionado. Cadastre um em Configurações.');
 
-  if (!termoId) {
-    throw new Error('Nenhum modelo de garantia selecionado. Cadastre um em Configurações.');
-  }
-
-  // Busca o termo e as configurações
   const termo = await apiGet('/termosGarantia/' + termoId);
   if (!termo) throw new Error('Modelo de garantia não encontrado');
 
@@ -549,11 +529,9 @@ async function gerarPDFGarantia(id) {
 
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
-
   const entregue = new Date(o.data_saida);
   const expira = new Date(o.garantia_ate);
 
-  // ============ CABEÇALHO ============
   doc.setFillColor(0, 138, 125);
   doc.rect(0, 0, 210, 28, 'F');
   doc.setTextColor(255, 255, 255);
@@ -570,7 +548,6 @@ async function gerarPDFGarantia(id) {
   doc.setTextColor(0, 0, 0);
   let y = 40;
 
-  // ============ CLIENTE ============
   doc.setFillColor(230, 245, 243);
   doc.rect(15, y - 5, 180, 7, 'F');
   doc.setFont(undefined, 'bold');
@@ -594,7 +571,6 @@ async function gerarPDFGarantia(id) {
 
   y += 4;
 
-  // ============ APARELHO ============
   doc.setFillColor(230, 245, 243);
   doc.rect(15, y - 5, 180, 7, 'F');
   doc.setFont(undefined, 'bold');
@@ -613,7 +589,6 @@ async function gerarPDFGarantia(id) {
   doc.text('N Serie: ' + (o.numero_serie || '-'), 15, y);
   y += 10;
 
-  // ============ PERÍODO ============
   doc.setFillColor(230, 245, 243);
   doc.rect(15, y - 5, 180, 7, 'F');
   doc.setFont(undefined, 'bold');
@@ -637,16 +612,11 @@ async function gerarPDFGarantia(id) {
 
   y += 6;
   doc.setFont(undefined, 'normal');
-  const tempoTexto = termo.tempo_dias >= 365
-    ? Math.round(termo.tempo_dias / 365) + ' ano(s)'
-    : termo.tempo_dias >= 30
-      ? Math.round(termo.tempo_dias / 30) + ' mes(es)'
-      : termo.tempo_dias + ' dias';
+  const tempoTexto = termo.tempo_dias >= 365 ? Math.round(termo.tempo_dias / 365) + ' ano(s)' : termo.tempo_dias >= 30 ? Math.round(termo.tempo_dias / 30) + ' mes(es)' : termo.tempo_dias + ' dias';
   doc.text('Periodo:', 15, y);
   doc.text(tempoTexto + ' (' + termo.tempo_dias + ' dias)', 60, y);
   y += 12;
 
-  // ============ TERMOS (do modelo escolhido) ============
   doc.setFillColor(230, 245, 243);
   doc.rect(15, y - 5, 180, 7, 'F');
   doc.setFont(undefined, 'bold');
@@ -657,33 +627,21 @@ async function gerarPDFGarantia(id) {
   doc.setFont(undefined, 'normal');
   doc.setFontSize(9.5);
 
-  // Quebra o texto em linhas que caibam na largura
   const paragrafos = (termo.texto || '').split('\n');
   paragrafos.forEach(par => {
     if (!par.trim()) { y += 3; return; }
-
     const linhas = doc.splitTextToSize(par.trim(), 180);
-
     linhas.forEach(linha => {
-      // Quebra de página se necessário
-      if (y > 275) {
-        doc.addPage();
-        y = 20;
-      }
+      if (y > 275) { doc.addPage(); y = 20; }
       doc.text(linha, 15, y);
       y += 4.5;
     });
-
     y += 3;
   });
 
   y += 10;
 
-  // ============ ASSINATURA ============
-  if (y > 250) {
-    doc.addPage();
-    y = 30;
-  }
+  if (y > 250) { doc.addPage(); y = 30; }
 
   doc.setDrawColor(0, 0, 0);
   doc.line(60, y, 150, y);
@@ -697,105 +655,14 @@ async function gerarPDFGarantia(id) {
   doc.setTextColor(100, 100, 100);
   doc.text(sloganLoja, 105, y, { align: 'center' });
 
-  // ============ RODAPÉ ============
   const alturaPagina = doc.internal.pageSize.height;
   doc.setFontSize(8);
   doc.setTextColor(150, 150, 150);
-  doc.text(
-    'Documento gerado em ' + new Date().toLocaleString('pt-BR') + ' pelo sistema TechGest',
-    105,
-    alturaPagina - 10,
-    { align: 'center' }
-  );
+  doc.text('Documento gerado em ' + new Date().toLocaleString('pt-BR') + ' pelo sistema TechGest', 105, alturaPagina - 10, { align: 'center' });
 
   const nomeCliente = (o.cliente_nome || 'cliente').replace(/[^a-zA-Z0-9]/g, '-');
   doc.save('Garantia-OS-' + o.id + '-' + nomeCliente + '.pdf');
 }
-
-// ============================================
-// EVENTOS
-// ============================================
-
-document.addEventListener('DOMContentLoaded', () => {
-  const form = document.getElementById('form-ordem');
-  if (form) {
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const id = document.getElementById('ordem-id').value;
-      const dados = {
-        cliente_id: parseInt(document.getElementById('ordem-cliente').value) || null,
-        funcionario_id: parseInt(document.getElementById('ordem-funcionario').value) || null,
-        aparelho: document.getElementById('ordem-aparelho').value,
-        marca: document.getElementById('ordem-marca').value,
-        modelo: document.getElementById('ordem-modelo').value,
-        imei: document.getElementById('ordem-imei').value,
-        numero_serie: document.getElementById('ordem-serie').value,
-        defeito: document.getElementById('ordem-defeito').value,
-        servico_realizado: document.getElementById('ordem-servico').value,
-        pecas_utilizadas: document.getElementById('ordem-pecas').value,
-        valor: parseFloat(document.getElementById('ordem-valor').value) || 0,
-        status: document.getElementById('ordem-status').value
-      };
-
-      if (id) await apiPut('/ordens/' + id, dados);
-      else await apiPost('/ordens', dados);
-
-      form.reset();
-      document.getElementById('ordem-id').value = '';
-      document.getElementById('cancel-ordem').style.display = 'none';
-      document.getElementById('pagamentos-os-section').style.display = 'none';
-      osAtual = null;
-      carregarOrdens();
-    });
-
-    const btnCancel = document.getElementById('cancel-ordem');
-    if (btnCancel) {
-      btnCancel.addEventListener('click', () => {
-        form.reset();
-        document.getElementById('ordem-id').value = '';
-        document.getElementById('cancel-ordem').style.display = 'none';
-        document.getElementById('pagamentos-os-section').style.display = 'none';
-        osAtual = null;
-      });
-    }
-  }
-
-  const formPgto = document.getElementById('form-pagamento');
-  if (formPgto) {
-    formPgto.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (!osAtual) return;
-
-      const dados = {
-        valor: parseFloat(document.getElementById('pagamento-valor').value) || 0,
-        forma_pagamento: document.getElementById('pagamento-forma').value,
-        parcelas: parseInt(document.getElementById('pagamento-parcelas').value) || 1,
-        observacao: document.getElementById('pagamento-obs').value
-      };
-
-      if (dados.valor <= 0) {
-        alert('Valor deve ser maior que zero.');
-        return;
-      }
-
-      await apiPost(`/ordens/${osAtual}/pagamento`, dados);
-      formPgto.reset();
-      await atualizarPagamentosOS();
-      carregarOrdens();
-    });
-  }
-
-  const modalEnvio = document.getElementById('modal-envio');
-  if (modalEnvio) {
-    modalEnvio.addEventListener('click', (e) => {
-      if (e.target === modalEnvio) fecharModalEnvio();
-    });
-  }
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') fecharModalEnvio();
-  });
-});
 
 // ============================================
 // FECHAR MODAL DE ENVIO
@@ -863,3 +730,91 @@ async function executarEnvio() {
     btn.disabled = false;
   }
 }
+
+// ============================================
+// EVENTOS
+// ============================================
+
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('form-ordem');
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('ordem-id').value;
+      const dados = {
+        cliente_id: parseInt(document.getElementById('ordem-cliente').value) || null,
+        funcionario_id: parseInt(document.getElementById('ordem-funcionario').value) || null,
+        aparelho: document.getElementById('ordem-aparelho').value,
+        marca: document.getElementById('ordem-marca').value,
+        modelo: document.getElementById('ordem-modelo').value,
+        imei: document.getElementById('ordem-imei').value,
+        numero_serie: document.getElementById('ordem-serie').value,
+        defeito: document.getElementById('ordem-defeito').value,
+        servico_realizado: document.getElementById('ordem-servico').value,
+        pecas_utilizadas: document.getElementById('ordem-pecas').value,
+        valor: parseFloat(document.getElementById('ordem-valor').value) || 0,
+        status: document.getElementById('ordem-status').value,
+        data_saida: document.getElementById('ordem-data-saida').value || null
+      };
+
+      if (id) await apiPut('/ordens/' + id, dados);
+      else await apiPost('/ordens', dados);
+
+      form.reset();
+      document.getElementById('ordem-id').value = '';
+      document.getElementById('ordem-data-saida').value = '';
+      document.getElementById('cancel-ordem').style.display = 'none';
+      document.getElementById('pagamentos-os-section').style.display = 'none';
+      osAtual = null;
+      carregarOrdens();
+    });
+
+    const btnCancel = document.getElementById('cancel-ordem');
+    if (btnCancel) {
+      btnCancel.addEventListener('click', () => {
+        form.reset();
+        document.getElementById('ordem-id').value = '';
+        document.getElementById('ordem-data-saida').value = '';
+        document.getElementById('cancel-ordem').style.display = 'none';
+        document.getElementById('pagamentos-os-section').style.display = 'none';
+        osAtual = null;
+      });
+    }
+  }
+
+  const formPgto = document.getElementById('form-pagamento');
+  if (formPgto) {
+    formPgto.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!osAtual) return;
+
+      const dados = {
+        valor: parseFloat(document.getElementById('pagamento-valor').value) || 0,
+        forma_pagamento: document.getElementById('pagamento-forma').value,
+        parcelas: parseInt(document.getElementById('pagamento-parcelas').value) || 1,
+        observacao: document.getElementById('pagamento-obs').value
+      };
+
+      if (dados.valor <= 0) {
+        alert('Valor deve ser maior que zero.');
+        return;
+      }
+
+      await apiPost(`/ordens/${osAtual}/pagamento`, dados);
+      formPgto.reset();
+      await atualizarPagamentosOS();
+      carregarOrdens();
+    });
+  }
+
+  const modalEnvio = document.getElementById('modal-envio');
+  if (modalEnvio) {
+    modalEnvio.addEventListener('click', (e) => {
+      if (e.target === modalEnvio) fecharModalEnvio();
+    });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') fecharModalEnvio();
+  });
+});
