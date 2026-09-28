@@ -3,6 +3,8 @@
 // ============================================
 
 let osAtual = null;
+let produtosOS = [];
+let maoDeObraOS = [];
 
 // ============================================
 // LISTAR
@@ -70,6 +72,160 @@ async function carregarOrdens() {
 }
 
 // ============================================
+// MÃO DE OBRA
+// ============================================
+
+function adicionarMaoDeObra() {
+  const descInput = document.getElementById('os-mo-descricao');
+  const valorInput = document.getElementById('os-mo-valor');
+
+  const descricao = descInput.value.trim();
+  const valor = parseFloat(valorInput.value) || 0;
+
+  if (!descricao) return alert('Digite a descrição do serviço');
+  if (valor <= 0) return alert('Digite um valor maior que zero');
+
+  maoDeObraOS.push({ descricao, valor });
+  descInput.value = '';
+  valorInput.value = '';
+  renderMaoDeObra();
+}
+
+function removerMaoDeObra(i) {
+  maoDeObraOS.splice(i, 1);
+  renderMaoDeObra();
+}
+
+function renderMaoDeObra() {
+  const div = document.getElementById('os-mao-de-obra-lista');
+  if (!div) return;
+
+  if (maoDeObraOS.length === 0) {
+    div.innerHTML = '<div class="vazio">Nenhum serviço adicionado</div>';
+    document.getElementById('os-mo-subtotal').textContent = 'R$ 0,00';
+    recalcularTotal();
+    return;
+  }
+
+  div.innerHTML = '';
+  let subtotal = 0;
+
+  maoDeObraOS.forEach((item, i) => {
+    subtotal += item.valor;
+    const el = document.createElement('div');
+    el.className = 'item';
+    el.style.display = 'flex';
+    el.style.justifyContent = 'space-between';
+    el.style.alignItems = 'center';
+    el.innerHTML = `
+      <span>${item.descricao} — <strong>${formatMoney(item.valor)}</strong></span>
+      <button type="button" onclick="removerMaoDeObra(${i})" style="background:var(--cor-erro); color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:12px;">x</button>
+    `;
+    div.appendChild(el);
+  });
+
+  document.getElementById('os-mo-subtotal').textContent = formatMoney(subtotal);
+  recalcularTotal();
+}
+
+// ============================================
+// PRODUTOS
+// ============================================
+
+async function carregarSelectProdutosOS() {
+  const select = document.getElementById('os-produto-select');
+  if (!select) return;
+
+  try {
+    const produtos = await apiGet('/produtos');
+    select.innerHTML = '<option value="">Selecione um produto...</option>';
+
+    produtos.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = `${p.nome} — ${formatMoney(p.preco)}`;
+      opt.dataset.preco = p.preco;
+      opt.dataset.nome = p.nome;
+      select.appendChild(opt);
+    });
+  } catch (err) {
+    console.error('Erro ao carregar produtos:', err);
+  }
+}
+
+function adicionarProdutoOS() {
+  const select = document.getElementById('os-produto-select');
+  const qtdInput = document.getElementById('os-produto-qtd');
+  const opt = select.options[select.selectedIndex];
+  const qtd = parseInt(qtdInput.value) || 1;
+
+  if (!select.value) return alert('Selecione um produto');
+
+  const preco = parseFloat(opt.dataset.preco) || 0;
+  const nome = opt.dataset.nome;
+
+  produtosOS.push({
+    id: parseInt(select.value),
+    nome,
+    preco,
+    quantidade: qtd
+  });
+
+  select.value = '';
+  qtdInput.value = '1';
+  renderProdutosOS();
+}
+
+function removerProdutoOS(index) {
+  produtosOS.splice(index, 1);
+  renderProdutosOS();
+}
+
+function renderProdutosOS() {
+  const div = document.getElementById('os-produtos-lista');
+  if (!div) return;
+
+  if (produtosOS.length === 0) {
+    div.innerHTML = '<div class="vazio">Nenhum produto adicionado</div>';
+    document.getElementById('os-produtos-subtotal').textContent = 'R$ 0,00';
+    recalcularTotal();
+    return;
+  }
+
+  div.innerHTML = '';
+  let subtotal = 0;
+
+  produtosOS.forEach((p, i) => {
+    subtotal += p.preco * p.quantidade;
+    const el = document.createElement('div');
+    el.className = 'item';
+    el.style.display = 'flex';
+    el.style.justifyContent = 'space-between';
+    el.style.alignItems = 'center';
+    el.innerHTML = `
+      <span>${p.nome} — ${p.quantidade}x ${formatMoney(p.preco)} = <strong>${formatMoney(p.preco * p.quantidade)}</strong></span>
+      <button type="button" onclick="removerProdutoOS(${i})" style="background:var(--cor-erro); color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:12px;">x</button>
+    `;
+    div.appendChild(el);
+  });
+
+  document.getElementById('os-produtos-subtotal').textContent = formatMoney(subtotal);
+  recalcularTotal();
+}
+
+// ============================================
+// RECALCULAR TOTAL
+// ============================================
+
+function recalcularTotal() {
+  const somaMO = maoDeObraOS.reduce((s, i) => s + i.valor, 0);
+  const somaProd = produtosOS.reduce((s, i) => s + i.preco * i.quantidade, 0);
+  const total = somaMO + somaProd;
+  const el = document.getElementById('ordem-valor');
+  if (el) el.value = total.toFixed(2);
+}
+
+// ============================================
 // VER
 // ============================================
 
@@ -82,6 +238,18 @@ async function verOrdem(id) {
   const total = o.valor || 0;
   const falta = Math.max(total - pago, 0);
   const quitado = o.quitado === 1;
+
+  let moHTML = '-';
+  try {
+    const arr = JSON.parse(o.mao_de_obra || '[]');
+    if (arr.length > 0) moHTML = arr.map(m => `${m.descricao} — ${formatMoney(m.valor)}`).join('<br>');
+  } catch (e) {}
+
+  let prodHTML = '-';
+  try {
+    const arr = JSON.parse(o.produtos_vendidos || '[]');
+    if (arr.length > 0) prodHTML = arr.map(p => `${p.quantidade}x ${p.nome} (${formatMoney(p.preco)})`).join('<br>');
+  } catch (e) {}
 
   const html = `
     <div class="info-linha"><strong>OS</strong><span>#${o.id}</span></div>
@@ -96,6 +264,8 @@ async function verOrdem(id) {
     <div class="info-linha"><strong>Defeito</strong><span>${o.defeito || '-'}</span></div>
     <div class="info-linha"><strong>Serviço realizado</strong><span>${o.servico_realizado || '-'}</span></div>
     <div class="info-linha"><strong>Peças utilizadas</strong><span>${o.pecas_utilizadas || '-'}</span></div>
+    <div class="info-linha"><strong>Mão de Obra</strong><span>${moHTML}</span></div>
+    <div class="info-linha"><strong>Produtos vendidos</strong><span>${prodHTML}</span></div>
     <div class="info-linha"><strong>Valor total</strong><span>${formatMoney(total)}</span></div>
     <div class="info-linha"><strong>Valor pago</strong><span>${formatMoney(pago)}</span></div>
     <div class="info-linha"><strong>Falta</strong><span>${quitado ? 'QUITADO' : formatMoney(falta)}</span></div>
@@ -129,10 +299,18 @@ async function editarOrdem(id) {
   document.getElementById('ordem-defeito').value = o.defeito || '';
   document.getElementById('ordem-servico').value = o.servico_realizado || '';
   document.getElementById('ordem-pecas').value = o.pecas_utilizadas || '';
-  document.getElementById('ordem-valor').value = o.valor || 0;
   document.getElementById('ordem-status').value = o.status || 'Aberta';
 
-  // Preenche a data de entrega
+  try { maoDeObraOS = JSON.parse(o.mao_de_obra || '[]'); } catch (e) { maoDeObraOS = []; }
+  if (!Array.isArray(maoDeObraOS)) maoDeObraOS = [];
+
+  try { produtosOS = JSON.parse(o.produtos_vendidos || '[]'); } catch (e) { produtosOS = []; }
+  if (!Array.isArray(produtosOS)) produtosOS = [];
+
+  await carregarSelectProdutosOS();
+  renderMaoDeObra();
+  renderProdutosOS();
+
   if (o.data_saida) {
     const d = new Date(o.data_saida);
     const ano = d.getFullYear();
@@ -324,10 +502,15 @@ async function gerarPDFOrdem(id) {
   const lista = await apiGet('/ordens');
   const o = lista.find(x => x.id === id);
   if (!o) throw new Error('OS não encontrada');
+  if (!window.jspdf || !window.jspdf.jsPDF) throw new Error('Biblioteca de PDF não carregou.');
 
-  if (!window.jspdf || !window.jspdf.jsPDF) {
-    throw new Error('Biblioteca de PDF não carregou.');
-  }
+  let nomeLoja = 'Garagem Tech';
+  let sloganLoja = 'Soluções Tecnológicas';
+  try {
+    const config = await apiGet('/configuracoes');
+    if (config.nome_loja) nomeLoja = config.nome_loja;
+    if (config.slogan_loja) sloganLoja = config.slogan_loja;
+  } catch (e) {}
 
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
@@ -337,16 +520,24 @@ async function gerarPDFOrdem(id) {
   const falta = Math.max(total - pago, 0);
   const quitado = o.quitado === 1;
 
+  let moArr = [];
+  let prodArr = [];
+  try { moArr = JSON.parse(o.mao_de_obra || '[]'); } catch (e) {}
+  try { prodArr = JSON.parse(o.produtos_vendidos || '[]'); } catch (e) {}
+  if (!Array.isArray(moArr)) moArr = [];
+  if (!Array.isArray(prodArr)) prodArr = [];
+
+  // CABEÇALHO
   doc.setFillColor(0, 138, 125);
   doc.rect(0, 0, 210, 28, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(20);
   doc.setFont(undefined, 'bold');
-  doc.text('TechGest', 15, 13);
+  doc.text(nomeLoja, 15, 13);
   doc.setFontSize(10);
   doc.setFont(undefined, 'normal');
-  doc.text('Sistema de Gestao para Assistencia Tecnica', 15, 20);
-  doc.text('Garagem Tech', 15, 25);
+  doc.text(sloganLoja, 15, 20);
+  doc.text('Sistema TechGest', 15, 25);
   doc.setFontSize(14);
   doc.setFont(undefined, 'bold');
   doc.text('OS #' + o.id, 195, 15, { align: 'right' });
@@ -380,6 +571,7 @@ async function gerarPDFOrdem(id) {
   doc.line(15, y, 195, y);
   y += 8;
 
+  // CLIENTE
   doc.setFillColor(230, 245, 243);
   doc.rect(15, y - 5, 180, 7, 'F');
   doc.setFont(undefined, 'bold');
@@ -398,15 +590,12 @@ async function gerarPDFOrdem(id) {
       doc.text('Telefone: ' + (cliente.telefone || '-'), 15, y);
       doc.text('CPF: ' + (cliente.cpf || '-'), 110, y);
       y += 6;
-      doc.text('E-mail: ' + (cliente.email || '-'), 15, y);
-      y += 6;
-      doc.text('Endereco: ' + (cliente.endereco || '-'), 15, y);
-      y += 6;
     }
   } catch (e) {}
 
   y += 4;
 
+  // APARELHO
   doc.setFillColor(230, 245, 243);
   doc.rect(15, y - 5, 180, 7, 'F');
   doc.setFont(undefined, 'bold');
@@ -425,38 +614,124 @@ async function gerarPDFOrdem(id) {
   doc.text('N Serie: ' + (o.numero_serie || '-'), 15, y);
   y += 8;
 
-  doc.setFillColor(230, 245, 243);
-  doc.rect(15, y - 5, 180, 7, 'F');
-  doc.setFont(undefined, 'bold');
-  doc.setFontSize(11);
-  doc.text('DESCRICAO DO SERVICO', 15, y);
-  y += 8;
+  // DEFEITO
+  if (o.defeito) {
+    doc.setFillColor(230, 245, 243);
+    doc.rect(15, y - 5, 180, 7, 'F');
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(11);
+    doc.text('DEFEITO RELATADO', 15, y);
+    y += 8;
 
-  doc.setFont(undefined, 'normal');
-  doc.setFontSize(10);
-  doc.setFont(undefined, 'bold');
-  doc.text('Defeito relatado:', 15, y);
-  y += 5;
-  doc.setFont(undefined, 'normal');
-  const defeito = doc.splitTextToSize(o.defeito || '-', 175);
-  doc.text(defeito, 15, y);
-  y += defeito.length * 5 + 3;
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(10);
+    const linhas = doc.splitTextToSize(o.defeito, 175);
+    doc.text(linhas, 15, y);
+    y += linhas.length * 5 + 5;
+  }
 
-  doc.setFont(undefined, 'bold');
-  doc.text('Servico realizado:', 15, y);
-  y += 5;
-  doc.setFont(undefined, 'normal');
-  const servico = doc.splitTextToSize(o.servico_realizado || '-', 175);
-  doc.text(servico, 15, y);
-  y += servico.length * 5 + 3;
+  // MÃO DE OBRA
+  if (moArr.length > 0) {
+    if (y > 220) { doc.addPage(); y = 20; }
 
-  doc.setFont(undefined, 'bold');
-  doc.text('Pecas utilizadas:', 15, y);
-  y += 5;
-  doc.setFont(undefined, 'normal');
-  const pecas = doc.splitTextToSize(o.pecas_utilizadas || '-', 175);
-  doc.text(pecas, 15, y);
-  y += pecas.length * 5 + 5;
+    doc.setFillColor(230, 245, 243);
+    doc.rect(15, y - 5, 180, 7, 'F');
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(11);
+    doc.text('MAO DE OBRA', 15, y);
+    y += 10;
+
+    doc.setFillColor(60, 60, 60);
+    doc.setTextColor(255, 255, 255);
+    doc.rect(15, y - 4, 180, 6, 'F');
+    doc.setFontSize(10);
+    doc.text('Servico', 18, y);
+    doc.text('Valor', 195, y, { align: 'right' });
+    y += 6;
+
+    doc.setTextColor(0, 0, 0);
+    doc.setFont(undefined, 'normal');
+
+    let subtotal = 0;
+    moArr.forEach(m => {
+      if (y > 275) { doc.addPage(); y = 20; }
+      subtotal += m.valor || 0;
+      const nome = (m.descricao || '-').substring(0, 70);
+      doc.text(nome, 18, y);
+      doc.text(formatMoney(m.valor || 0), 195, y, { align: 'right' });
+      y += 5;
+    });
+
+    y += 2;
+    doc.setFont(undefined, 'bold');
+    doc.text('Subtotal Mao de Obra:', 130, y);
+    doc.text(formatMoney(subtotal), 195, y, { align: 'right' });
+    y += 10;
+  }
+
+  // PRODUTOS
+  if (prodArr.length > 0) {
+    if (y > 220) { doc.addPage(); y = 20; }
+
+    doc.setFillColor(230, 245, 243);
+    doc.rect(15, y - 5, 180, 7, 'F');
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(11);
+    doc.text('PRODUTOS VENDIDOS', 15, y);
+    y += 10;
+
+    doc.setFillColor(60, 60, 60);
+    doc.setTextColor(255, 255, 255);
+    doc.rect(15, y - 4, 180, 6, 'F');
+    doc.setFontSize(10);
+    doc.text('Produto', 18, y);
+    doc.text('Qtd', 130, y);
+    doc.text('Unit.', 155, y);
+    doc.text('Total', 195, y, { align: 'right' });
+    y += 6;
+
+    doc.setTextColor(0, 0, 0);
+    doc.setFont(undefined, 'normal');
+
+    let subtotal = 0;
+    prodArr.forEach(p => {
+      if (y > 275) { doc.addPage(); y = 20; }
+      const sub = (p.preco || 0) * (p.quantidade || 1);
+      subtotal += sub;
+      doc.text((p.nome || '-').substring(0, 55), 18, y);
+      doc.text(String(p.quantidade || 1), 130, y);
+      doc.text(formatMoney(p.preco || 0), 155, y);
+      doc.text(formatMoney(sub), 195, y, { align: 'right' });
+      y += 5;
+    });
+
+    y += 2;
+    doc.setFont(undefined, 'bold');
+    doc.text('Subtotal Produtos:', 130, y);
+    doc.text(formatMoney(subtotal), 195, y, { align: 'right' });
+    y += 10;
+  }
+
+  // SERVIÇO REALIZADO (texto)
+  if (o.servico_realizado) {
+    if (y > 230) { doc.addPage(); y = 20; }
+
+    doc.setFillColor(230, 245, 243);
+    doc.rect(15, y - 5, 180, 7, 'F');
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(11);
+    doc.text('OBSERVACOES DO SERVICO', 15, y);
+    y += 8;
+
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(10);
+    const linhas = doc.splitTextToSize(o.servico_realizado, 175);
+    doc.text(linhas, 15, y);
+    y += linhas.length * 5 + 5;
+  }
+
+  // VALORES
+  if (y > 240) { doc.addPage(); y = 20; }
 
   doc.setFillColor(0, 138, 125);
   doc.setTextColor(255, 255, 255);
@@ -495,7 +770,7 @@ async function gerarPDFOrdem(id) {
   const alturaPagina = doc.internal.pageSize.height;
   doc.setFontSize(8);
   doc.setTextColor(150, 150, 150);
-  doc.text('Documento gerado em ' + new Date().toLocaleString('pt-BR') + ' pelo sistema TechGest', 105, alturaPagina - 10, { align: 'center' });
+  doc.text('Documento gerado em ' + new Date().toLocaleString('pt-BR') + ' pelo TechGest', 105, alturaPagina - 10, { align: 'center' });
 
   const nomeCliente = (o.cliente_nome || 'cliente').replace(/[^a-zA-Z0-9]/g, '-');
   doc.save('OS-' + o.id + '-' + nomeCliente + '.pdf');
@@ -514,7 +789,7 @@ async function gerarPDFGarantia(id) {
 
   const selectTermo = document.getElementById('envio-termo-garantia');
   const termoId = selectTermo ? selectTermo.value : null;
-  if (!termoId) throw new Error('Nenhum modelo de garantia selecionado. Cadastre um em Configurações.');
+  if (!termoId) throw new Error('Nenhum modelo de garantia selecionado.');
 
   const termo = await apiGet('/termosGarantia/' + termoId);
   if (!termo) throw new Error('Modelo de garantia não encontrado');
@@ -575,7 +850,7 @@ async function gerarPDFGarantia(id) {
   doc.rect(15, y - 5, 180, 7, 'F');
   doc.setFont(undefined, 'bold');
   doc.setFontSize(11);
-  doc.text('APARELHO / SERVIÇO', 15, y);
+  doc.text('APARELHO / SERVICO', 15, y);
   y += 8;
 
   doc.setFont(undefined, 'normal');
@@ -640,7 +915,6 @@ async function gerarPDFGarantia(id) {
   });
 
   y += 10;
-
   if (y > 250) { doc.addPage(); y = 30; }
 
   doc.setDrawColor(0, 0, 0);
@@ -664,18 +938,10 @@ async function gerarPDFGarantia(id) {
   doc.save('Garantia-OS-' + o.id + '-' + nomeCliente + '.pdf');
 }
 
-// ============================================
-// FECHAR MODAL DE ENVIO
-// ============================================
-
 function fecharModalEnvio() {
   const modal = document.getElementById('modal-envio');
   if (modal) modal.classList.remove('active');
 }
-
-// ============================================
-// EXECUTAR ENVIO
-// ============================================
 
 async function executarEnvio() {
   if (!osAtual) return;
@@ -700,28 +966,23 @@ async function executarEnvio() {
   try {
     if (enviarPdfOs) {
       await gerarPDFOrdem(o.id);
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise(r => setTimeout(r, 700));
     }
-
     if (enviarPdfGarantia && o.garantia_ate) {
       await gerarPDFGarantia(o.id);
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise(r => setTimeout(r, 700));
     }
-
     if (abrirWhats && telefone) {
       const url = 'https://wa.me/' + telefone + '?text=' + encodeURIComponent(mensagem);
       window.open(url, '_blank');
     }
 
     fecharModalEnvio();
-
     let aviso = 'Documentos gerados com sucesso!\n\n';
     if (enviarPdfOs) aviso += '- PDF da OS: baixado na pasta Downloads\n';
     if (enviarPdfGarantia) aviso += '- PDF de Garantia: baixado na pasta Downloads\n';
     if (abrirWhats && telefone) aviso += '- WhatsApp: aberto em nova aba\n';
-    aviso += '\nAgora:\n1. Va na conversa do WhatsApp\n2. Clique no clip\n3. Escolha os PDFs baixados\n4. Enviar';
     alert(aviso);
-
   } catch (err) {
     alert('Erro ao enviar: ' + err.message);
     console.error(err);
@@ -741,6 +1002,8 @@ document.addEventListener('DOMContentLoaded', () => {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const id = document.getElementById('ordem-id').value;
+      const valorCalculado = parseFloat(document.getElementById('ordem-valor').value) || 0;
+
       const dados = {
         cliente_id: parseInt(document.getElementById('ordem-cliente').value) || null,
         funcionario_id: parseInt(document.getElementById('ordem-funcionario').value) || null,
@@ -752,7 +1015,9 @@ document.addEventListener('DOMContentLoaded', () => {
         defeito: document.getElementById('ordem-defeito').value,
         servico_realizado: document.getElementById('ordem-servico').value,
         pecas_utilizadas: document.getElementById('ordem-pecas').value,
-        valor: parseFloat(document.getElementById('ordem-valor').value) || 0,
+        mao_de_obra: JSON.stringify(maoDeObraOS),
+        produtos_vendidos: JSON.stringify(produtosOS),
+        valor: valorCalculado,
         status: document.getElementById('ordem-status').value,
         data_saida: document.getElementById('ordem-data-saida').value || null
       };
@@ -761,6 +1026,10 @@ document.addEventListener('DOMContentLoaded', () => {
       else await apiPost('/ordens', dados);
 
       form.reset();
+      maoDeObraOS = [];
+      produtosOS = [];
+      renderMaoDeObra();
+      renderProdutosOS();
       document.getElementById('ordem-id').value = '';
       document.getElementById('ordem-data-saida').value = '';
       document.getElementById('cancel-ordem').style.display = 'none';
@@ -769,10 +1038,18 @@ document.addEventListener('DOMContentLoaded', () => {
       carregarOrdens();
     });
 
+    carregarSelectProdutosOS();
+    renderMaoDeObra();
+    renderProdutosOS();
+
     const btnCancel = document.getElementById('cancel-ordem');
     if (btnCancel) {
       btnCancel.addEventListener('click', () => {
         form.reset();
+        maoDeObraOS = [];
+        produtosOS = [];
+        renderMaoDeObra();
+        renderProdutosOS();
         document.getElementById('ordem-id').value = '';
         document.getElementById('ordem-data-saida').value = '';
         document.getElementById('cancel-ordem').style.display = 'none';

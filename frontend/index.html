@@ -252,7 +252,42 @@
           <textarea placeholder="Defeito relatado" id="ordem-defeito"></textarea>
           <textarea placeholder="Serviço realizado" id="ordem-servico"></textarea>
           <textarea placeholder="Peças utilizadas" id="ordem-pecas"></textarea>
-          <input type="number" step="0.01" placeholder="Valor" id="ordem-valor" />
+          <div style="grid-column:1/-1; background:var(--cor-fundo-tabela-head); padding:12px; border-radius:8px; margin-top:8px;">
+          <div style="grid-column:1/-1; background:var(--cor-fundo-tabela-head); padding:12px; border-radius:8px; margin-top:8px;">
+            <strong style="display:block; font-size:13px; color:var(--cor-texto-suave); text-transform:uppercase; margin-bottom:8px;">Mão de Obra (Serviços Realizados)</strong>
+
+            <div style="display:grid; grid-template-columns:1fr 100px auto; gap:8px; margin-bottom:10px;">
+              <input type="text" id="os-mo-descricao" placeholder="Ex: Instalação Windows 11" />
+              <input type="number" id="os-mo-valor" placeholder="Valor" step="0.01" />
+              <button type="button" onclick="adicionarMaoDeObra()" style="background:var(--cor-primaria); color:#fff; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; font-weight:600;">+ Adicionar</button>
+            </div>
+
+            <div id="os-mao-de-obra-lista" class="lista" style="background:var(--cor-fundo-card);"></div>
+
+            <div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--cor-borda); display:flex; justify-content:space-between; font-size:14px;">
+              <strong>Subtotal Mão de Obra:</strong>
+              <strong id="os-mo-subtotal" style="color:var(--cor-primaria-escura);">R$ 0,00</strong>
+            </div>
+          </div>
+
+            <strong style="display:block; font-size:13px; color:var(--cor-texto-suave); text-transform:uppercase; margin-bottom:8px;">Produtos Vendidos Junto</strong>
+
+            <div style="display:grid; grid-template-columns:1fr 80px auto; gap:8px; margin-bottom:10px;">
+              <select id="os-produto-select">
+                <option value="">Selecione um produto...</option>
+              </select>
+              <input type="number" id="os-produto-qtd" placeholder="Qtd" value="1" min="1" />
+              <button type="button" onclick="adicionarProdutoOS()" style="background:var(--cor-primaria); color:#fff; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; font-weight:600;">+ Adicionar</button>
+            </div>
+
+            <div id="os-produtos-lista" class="lista" style="background:var(--cor-fundo-card);"></div>
+
+            <div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--cor-borda); display:flex; justify-content:space-between; font-size:14px;">
+              <strong>Subtotal Produtos:</strong>
+              <strong id="os-produtos-subtotal" style="color:var(--cor-primaria-escura);">R$ 0,00</strong>
+            </div>
+          </div>
+          <input type="number" step="0.01" placeholder="Valor Total (calculado)" id="ordem-valor" readonly style="background:var(--cor-primaria-tint); font-weight:700;" />
           <select id="ordem-status">
             <option>Aberta</option>
             <option>Em Análise</option>

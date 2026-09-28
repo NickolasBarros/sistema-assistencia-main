@@ -2,19 +2,11 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database');
 
-// ============================================
-// HELPERS
-// ============================================
-
 function calcularGarantia(dataSaida, dias = 180) {
   const base = dataSaida ? new Date(dataSaida) : new Date();
   base.setDate(base.getDate() + dias);
   return base.toISOString();
 }
-
-// ============================================
-// LISTAR
-// ============================================
 
 router.get('/', (req, res) => {
   db.all(
@@ -32,12 +24,8 @@ router.get('/', (req, res) => {
   );
 });
 
-// ============================================
-// CRIAR
-// ============================================
-
 router.post('/', (req, res) => {
-  const { cliente_id, funcionario_id, aparelho, marca, modelo, imei, numero_serie, defeito, servico_realizado, pecas_utilizadas, valor, status, data_saida } = req.body;
+  const { cliente_id, funcionario_id, aparelho, marca, modelo, imei, numero_serie, defeito, servico_realizado, pecas_utilizadas, mao_de_obra, produtos_vendidos, valor, status, data_saida } = req.body;
 
   const st = status || 'Aberta';
   let dataSaidaFinal = null;
@@ -49,9 +37,9 @@ router.post('/', (req, res) => {
   }
 
   db.run(
-    `INSERT INTO ordens (cliente_id, funcionario_id, aparelho, marca, modelo, imei, numero_serie, defeito, servico_realizado, pecas_utilizadas, valor, status, valor_pago, quitado, data_saida, garantia_ate)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0,0,?,?)`,
-    [cliente_id, funcionario_id, aparelho, marca, modelo, imei, numero_serie, defeito, servico_realizado, pecas_utilizadas, valor, st, dataSaidaFinal, garantiaAte],
+    `INSERT INTO ordens (cliente_id, funcionario_id, aparelho, marca, modelo, imei, numero_serie, defeito, servico_realizado, pecas_utilizadas, mao_de_obra, produtos_vendidos, valor, status, valor_pago, quitado, data_saida, garantia_ate)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,0,?,?)`,
+    [cliente_id, funcionario_id, aparelho, marca, modelo, imei, numero_serie, defeito, servico_realizado, pecas_utilizadas, mao_de_obra || '[]', produtos_vendidos || '[]', valor, st, dataSaidaFinal, garantiaAte],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ id: this.lastID });
@@ -59,12 +47,8 @@ router.post('/', (req, res) => {
   );
 });
 
-// ============================================
-// ATUALIZAR
-// ============================================
-
 router.put('/:id', (req, res) => {
-  const { cliente_id, funcionario_id, aparelho, marca, modelo, imei, numero_serie, defeito, servico_realizado, pecas_utilizadas, valor, status, data_saida } = req.body;
+  const { cliente_id, funcionario_id, aparelho, marca, modelo, imei, numero_serie, defeito, servico_realizado, pecas_utilizadas, mao_de_obra, produtos_vendidos, valor, status, data_saida } = req.body;
   const ordemId = req.params.id;
 
   db.get('SELECT status, data_saida, garantia_ate FROM ordens WHERE id=?', [ordemId], (err, antiga) => {
@@ -76,13 +60,9 @@ router.put('/:id', (req, res) => {
 
     if (status === 'Entregue') {
       let baseData;
-      if (data_saida) {
-        baseData = new Date(data_saida + 'T12:00:00');
-      } else if (antiga.status === 'Entregue' && antiga.data_saida) {
-        baseData = new Date(antiga.data_saida);
-      } else {
-        baseData = new Date();
-      }
+      if (data_saida) baseData = new Date(data_saida + 'T12:00:00');
+      else if (antiga.status === 'Entregue' && antiga.data_saida) baseData = new Date(antiga.data_saida);
+      else baseData = new Date();
       dataSaidaFinal = baseData.toISOString();
       garantiaAte = calcularGarantia(dataSaidaFinal, 180);
     }
@@ -93,8 +73,8 @@ router.put('/:id', (req, res) => {
     }
 
     db.run(
-      `UPDATE ordens SET cliente_id=?, funcionario_id=?, aparelho=?, marca=?, modelo=?, imei=?, numero_serie=?, defeito=?, servico_realizado=?, pecas_utilizadas=?, valor=?, status=?, data_saida=?, garantia_ate=? WHERE id=?`,
-      [cliente_id, funcionario_id, aparelho, marca, modelo, imei, numero_serie, defeito, servico_realizado, pecas_utilizadas, valor, status, dataSaidaFinal, garantiaAte, ordemId],
+      `UPDATE ordens SET cliente_id=?, funcionario_id=?, aparelho=?, marca=?, modelo=?, imei=?, numero_serie=?, defeito=?, servico_realizado=?, pecas_utilizadas=?, mao_de_obra=?, produtos_vendidos=?, valor=?, status=?, data_saida=?, garantia_ate=? WHERE id=?`,
+      [cliente_id, funcionario_id, aparelho, marca, modelo, imei, numero_serie, defeito, servico_realizado, pecas_utilizadas, mao_de_obra || '[]', produtos_vendidos || '[]', valor, status, dataSaidaFinal, garantiaAte, ordemId],
       function (err2) {
         if (err2) return res.status(500).json({ error: err2.message });
         res.json({ atualizado: this.changes });
@@ -102,10 +82,6 @@ router.put('/:id', (req, res) => {
     );
   });
 });
-
-// ============================================
-// PAGAMENTOS
-// ============================================
 
 router.get('/:id/pagamentos', (req, res) => {
   db.all('SELECT * FROM os_pagamentos WHERE ordem_id = ? ORDER BY id DESC', [req.params.id], (err, rows) => {
@@ -117,7 +93,6 @@ router.get('/:id/pagamentos', (req, res) => {
 router.post('/:id/pagamento', (req, res) => {
   const ordemId = req.params.id;
   const { valor, forma_pagamento, parcelas, observacao } = req.body;
-
   if (!valor || valor <= 0) return res.status(400).json({ error: 'Valor inválido' });
 
   db.get('SELECT valor, valor_pago FROM ordens WHERE id=?', [ordemId], (err, ordem) => {
@@ -172,10 +147,6 @@ router.delete('/:id/pagamento/:pagamentoId', (req, res) => {
     });
   });
 });
-
-// ============================================
-// EXCLUIR
-// ============================================
 
 router.delete('/:id', (req, res) => {
   const ordemId = req.params.id;
