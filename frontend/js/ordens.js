@@ -595,7 +595,7 @@ async function gerarPDFOrdem(id) {
 
   y += 4;
 
-  // APARELHO
+  // APARELHO (com wrap)
   doc.setFillColor(230, 245, 243);
   doc.rect(15, y - 5, 180, 7, 'F');
   doc.setFont(undefined, 'bold');
@@ -605,17 +605,41 @@ async function gerarPDFOrdem(id) {
 
   doc.setFont(undefined, 'normal');
   doc.setFontSize(10);
-  doc.text('Aparelho: ' + (o.aparelho || '-'), 15, y);
-  doc.text('Marca: ' + (o.marca || '-'), 110, y);
-  y += 6;
-  doc.text('Modelo: ' + (o.modelo || '-'), 15, y);
-  doc.text('IMEI: ' + (o.imei || '-'), 110, y);
-  y += 6;
-  doc.text('N Serie: ' + (o.numero_serie || '-'), 15, y);
-  y += 8;
 
-  // DEFEITO
+  // Aparelho com wrap
+  const aparelhoLinhas = doc.splitTextToSize('Aparelho: ' + (o.aparelho || '-'), 180);
+  if (y + aparelhoLinhas.length * 5 > 275) { doc.addPage(); y = 20; }
+  doc.text(aparelhoLinhas, 15, y);
+  y += aparelhoLinhas.length * 5 + 1;
+
+  // Marca com wrap
+  const marcaLinhas = doc.splitTextToSize('Marca: ' + (o.marca || '-'), 180);
+  if (y + marcaLinhas.length * 5 > 275) { doc.addPage(); y = 20; }
+  doc.text(marcaLinhas, 15, y);
+  y += marcaLinhas.length * 5 + 1;
+
+  // Modelo com wrap
+  const modeloLinhas = doc.splitTextToSize('Modelo: ' + (o.modelo || '-'), 180);
+  if (y + modeloLinhas.length * 5 > 275) { doc.addPage(); y = 20; }
+  doc.text(modeloLinhas, 15, y);
+  y += modeloLinhas.length * 5 + 1;
+
+  // IMEI com wrap
+  const imeiLinhas = doc.splitTextToSize('IMEI: ' + (o.imei || '-'), 180);
+  if (y + imeiLinhas.length * 5 > 275) { doc.addPage(); y = 20; }
+  doc.text(imeiLinhas, 15, y);
+  y += imeiLinhas.length * 5 + 1;
+
+  // N Série com wrap
+  const serieLinhas = doc.splitTextToSize('N Serie: ' + (o.numero_serie || '-'), 180);
+  if (y + serieLinhas.length * 5 > 275) { doc.addPage(); y = 20; }
+  doc.text(serieLinhas, 15, y);
+  y += serieLinhas.length * 5 + 6;
+
+  // DEFEITO (com wrap)
   if (o.defeito) {
+    if (y > 250) { doc.addPage(); y = 20; }
+
     doc.setFillColor(230, 245, 243);
     doc.rect(15, y - 5, 180, 7, 'F');
     doc.setFont(undefined, 'bold');
@@ -625,14 +649,15 @@ async function gerarPDFOrdem(id) {
 
     doc.setFont(undefined, 'normal');
     doc.setFontSize(10);
-    const linhas = doc.splitTextToSize(o.defeito, 175);
+    const linhas = doc.splitTextToSize(o.defeito, 180);
+    if (y + linhas.length * 5 > 275) { doc.addPage(); y = 20; }
     doc.text(linhas, 15, y);
     y += linhas.length * 5 + 5;
   }
 
-  // MÃO DE OBRA
+  // MÃO DE OBRA (com wrap)
   if (moArr.length > 0) {
-    if (y > 220) { doc.addPage(); y = 20; }
+    if (y > 230) { doc.addPage(); y = 20; }
 
     doc.setFillColor(230, 245, 243);
     doc.rect(15, y - 5, 180, 7, 'F');
@@ -652,24 +677,27 @@ async function gerarPDFOrdem(id) {
     doc.setTextColor(0, 0, 0);
     doc.setFont(undefined, 'normal');
 
-    let subtotal = 0;
+    let subtotalMO = 0;
     moArr.forEach(m => {
-      if (y > 275) { doc.addPage(); y = 20; }
-      subtotal += m.valor || 0;
-      const nome = (m.descricao || '-').substring(0, 70);
-      doc.text(nome, 18, y);
+      const descLinhas = doc.splitTextToSize(m.descricao || '-', 150);
+      const altura = Math.max(descLinhas.length * 5, 6);
+
+      if (y + altura > 275) { doc.addPage(); y = 20; }
+
+      subtotalMO += m.valor || 0;
+      doc.text(descLinhas, 18, y);
       doc.text(formatMoney(m.valor || 0), 195, y, { align: 'right' });
-      y += 5;
+      y += altura;
     });
 
     y += 2;
     doc.setFont(undefined, 'bold');
     doc.text('Subtotal Mao de Obra:', 130, y);
-    doc.text(formatMoney(subtotal), 195, y, { align: 'right' });
+    doc.text(formatMoney(subtotalMO), 195, y, { align: 'right' });
     y += 10;
   }
 
-  // PRODUTOS
+  // PRODUTOS (com wrap real)
   if (prodArr.length > 0) {
     if (y > 220) { doc.addPage(); y = 20; }
 
@@ -683,38 +711,45 @@ async function gerarPDFOrdem(id) {
     doc.setFillColor(60, 60, 60);
     doc.setTextColor(255, 255, 255);
     doc.rect(15, y - 4, 180, 6, 'F');
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.text('Produto', 18, y);
-    doc.text('Qtd', 130, y);
-    doc.text('Unit.', 155, y);
+    doc.text('Qtd', 128, y);
+    doc.text('Unit.', 152, y);
     doc.text('Total', 195, y, { align: 'right' });
     y += 6;
 
     doc.setTextColor(0, 0, 0);
     doc.setFont(undefined, 'normal');
+    doc.setFontSize(9);
 
-    let subtotal = 0;
+    let subtotalProd = 0;
     prodArr.forEach(p => {
-      if (y > 275) { doc.addPage(); y = 20; }
+      const nomeLinhas = doc.splitTextToSize(p.nome || '-', 105);
+      const altura = Math.max(nomeLinhas.length * 4.5, 6);
+
+      if (y + altura > 275) { doc.addPage(); y = 20; }
+
       const sub = (p.preco || 0) * (p.quantidade || 1);
-      subtotal += sub;
-      doc.text((p.nome || '-').substring(0, 55), 18, y);
-      doc.text(String(p.quantidade || 1), 130, y);
-      doc.text(formatMoney(p.preco || 0), 155, y);
+      subtotalProd += sub;
+
+      doc.text(nomeLinhas, 18, y);
+      doc.text(String(p.quantidade || 1), 128, y);
+      doc.text(formatMoney(p.preco || 0), 152, y);
       doc.text(formatMoney(sub), 195, y, { align: 'right' });
-      y += 5;
+
+      y += altura;
     });
 
     y += 2;
     doc.setFont(undefined, 'bold');
     doc.text('Subtotal Produtos:', 130, y);
-    doc.text(formatMoney(subtotal), 195, y, { align: 'right' });
+    doc.text(formatMoney(subtotalProd), 195, y, { align: 'right' });
     y += 10;
   }
 
-  // SERVIÇO REALIZADO (texto)
+  // SERVIÇO REALIZADO (com wrap)
   if (o.servico_realizado) {
-    if (y > 230) { doc.addPage(); y = 20; }
+    if (y > 240) { doc.addPage(); y = 20; }
 
     doc.setFillColor(230, 245, 243);
     doc.rect(15, y - 5, 180, 7, 'F');
@@ -725,7 +760,8 @@ async function gerarPDFOrdem(id) {
 
     doc.setFont(undefined, 'normal');
     doc.setFontSize(10);
-    const linhas = doc.splitTextToSize(o.servico_realizado, 175);
+    const linhas = doc.splitTextToSize(o.servico_realizado, 180);
+    if (y + linhas.length * 5 > 275) { doc.addPage(); y = 20; }
     doc.text(linhas, 15, y);
     y += linhas.length * 5 + 5;
   }

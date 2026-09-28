@@ -667,3 +667,143 @@ body.dark .calendario-dia.tem-despesa {
   border: 1px dashed var(--cor-borda);
   margin-top: 8px;
 }
+
+/* ============================================
+   CORREÇÃO: TEXTO LONGO (word wrap)
+   ============================================ */
+.info-linha {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.info-linha strong {
+  flex-shrink: 0;
+}
+
+.info-linha span {
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.lista .item {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  line-height: 1.5;
+}
+
+.lista .item span {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+table td {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.modal-box {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.modal-box h2 {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* ============================================
+   CORREÇÃO: TABELAS COM TEXTO LONGO
+   ============================================ */
+
+/* Todas as tabelas: layout fixo */
+table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+table th,
+table td {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  vertical-align: top;
+  padding: 10px 12px;
+  line-height: 1.4;
+}
+
+/* Coluna Aparelho da tabela de OS: limita largura */
+#tabela-ordens th:nth-child(1),
+#tabela-ordens td:nth-child(1) { width: 50px; }   /* ID */
+
+#tabela-ordens th:nth-child(2),
+#tabela-ordens td:nth-child(2) { width: 15%; }    /* Cliente */
+
+#tabela-ordens th:nth-child(3),
+#tabela-ordens td:nth-child(3) { width: 22%; }    /* Aparelho */
+
+#tabela-ordens th:nth-child(4),
+#tabela-ordens td:nth-child(4) { width: 10%; }    /* Funcionário */
+
+#tabela-ordens th:nth-child(5),
+#tabela-ordens td:nth-child(5) { width: 8%; }     /* Status */
+
+#tabela-ordens th:nth-child(6),
+#tabela-ordens td:nth-child(6) { width: 8%; }     /* Valor */
+
+#tabela-ordens th:nth-child(7),
+#tabela-ordens td:nth-child(7) { width: 8%; }     /* Falta */
+
+#tabela-ordens th:nth-child(8),
+#tabela-ordens td:nth-child(8) { width: 12%; }    /* Garantia */
+
+#tabela-ordens th:nth-child(9),
+#tabela-ordens td:nth-child(9) { width: 160px; }  /* Ações */
+
+/* Botões dentro das células: empilhados quando necessário */
+#tabela-ordens td:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-content: flex-start;
+}
+
+#tabela-ordens td:last-child button {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+/* Badge de status não estoura */
+.badge {
+  white-space: nowrap;
+  display: inline-block;
+}
+
+/* Barra de garantia não estoura */
+#tabela-ordens td:nth-child(8) > div {
+  max-width: 100%;
+}
+
+/* Modais com textos longos */
+.modal-box .info-linha span {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+/* Itens das listas (mão de obra, produtos) */
+.lista .item {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  line-height: 1.5;
+}
+
+.lista .item span {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
