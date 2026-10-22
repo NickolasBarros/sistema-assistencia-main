@@ -52,4 +52,15 @@ document.querySelectorAll('.nav-item').forEach(btn => {
 
 document.addEventListener('DOMContentLoaded', () => {
   carregarDashboard();
+
+  document.querySelectorAll('[data-view-shortcut]').forEach(button => {
+    button.addEventListener('click', () => {
+      const view = button.dataset.viewShortcut;
+      const navButton = document.querySelector(`.nav-item[data-view="${view}"]`);
+      if (navButton) {
+        navButton.click();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+  });
 });
