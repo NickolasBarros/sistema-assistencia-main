@@ -325,8 +325,7 @@ async function editarOrdem(id) {
   document.getElementById('pagamentos-os-section').style.display = 'block';
   document.getElementById('pagamento-os-id').textContent = o.id;
   await atualizarPagamentosOS();
-
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  abrirFormularioCadastro('form-ordem', 'Editar Ordem de Serviço');
 }
 
 async function atualizarPagamentosOS() {

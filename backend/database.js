@@ -169,6 +169,13 @@ async function initialize() {
       diferenca REAL,
       observacao TEXT,
       status TEXT DEFAULT 'aberto'
+    )`,
+    `CREATE TABLE IF NOT EXISTS modelos_documentos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      tipo TEXT NOT NULL CHECK (tipo IN ('os', 'garantia')),
+      nome_original TEXT NOT NULL,
+      nome_arquivo TEXT NOT NULL UNIQUE,
+      criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
     )`
   ];
 

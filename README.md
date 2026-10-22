@@ -19,6 +19,7 @@ O repositório inclui [render.yaml](./render.yaml), configurado para:
 - Executar o serviço Node.js a partir de `backend/`.
 - Usar `PORT` fornecida pelo Render.
 - Armazenar o SQLite em `/var/data/database.db`.
+- Guardar os PDFs de referência enviados em `/var/data/uploads`.
 - Montar um disco persistente de 1 GB em `/var/data`.
 - Proteger a interface e a API com autenticação HTTP Basic.
 - Expor `/health` para a verificação de saúde do serviço.
@@ -30,6 +31,8 @@ O repositório inclui [render.yaml](./render.yaml), configurado para:
 5. Confira `https://<URL-DO-SERVIÇO>/health`; a resposta esperada é `{"status":"ok"}`.
 
 O disco persistente requer um plano do Render compatível e mantém o SQLite entre reinicializações e novos deploys. Como SQLite não é apropriado para múltiplas instâncias simultâneas, mantenha apenas uma instância do serviço.
+
+Na tela **Configurações**, é possível enviar um PDF de referência para o modelo de Ordem de Serviço e outro para o modelo de Garantia. Os arquivos ficam no disco persistente, podem ser baixados ou excluídos pela própria tela e têm limite de 5 MB. Eles não alteram os documentos gerados automaticamente pelas ordens de serviço.
 
 ### Dados existentes
 

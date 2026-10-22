@@ -113,6 +113,10 @@
             <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
           </svg>
         </button>
+        <button type="button" class="btn-configuracoes-topo" data-view-shortcut="configuracoes" title="Configurações da loja">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.8 1.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.1h-2.6v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1-1.8-1.8.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H6.3v-2.6h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1 1.8-1.8.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6v-.1H15v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1 1.8 1.8-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.1v2.6H21a1.7 1.7 0 0 0-1.6 1z"/></svg>
+          <span>Configurações</span>
+        </button>
       </div>
     </header>
 
@@ -653,6 +657,13 @@
       </div>
     </section>
     <section class="view" id="view-configuracoes">
+      <div class="settings-intro">
+        <div>
+          <span class="eyebrow">PREFERÊNCIAS DA LOJA</span>
+          <h2>Configurações</h2>
+          <p>Gerencie os dados da empresa e mantenha seus modelos de documentos organizados.</p>
+        </div>
+      </div>
       <div class="form-box">
         <h2>Dados da Loja</h2>
         <form id="form-configuracoes">
@@ -662,6 +673,56 @@
           <input placeholder="Telefone (opcional)" id="conf-telefone" />
           <button type="submit">Salvar Configurações</button>
         </form>
+      </div>
+
+      <div class="settings-modelos">
+        <div class="settings-section-heading">
+          <div>
+            <span class="eyebrow">DOCUMENTOS</span>
+            <h2>Modelos da loja</h2>
+            <p>Envie seus PDFs para manter uma cópia acessível no sistema.</p>
+          </div>
+        </div>
+        <div class="settings-modelos-grid">
+          <article class="settings-modelo-card">
+            <div class="settings-modelo-icon" aria-hidden="true">OS</div>
+            <h3>Modelo de Ordem de Serviço</h3>
+            <p>Guarde o layout institucional da sua OS para consulta ou download.</p>
+            <form class="form-upload-modelo" data-modelo="os">
+              <label class="upload-dropzone">
+                <input type="file" name="arquivo" accept="application/pdf,.pdf" required />
+                <span class="upload-symbol" aria-hidden="true">↑</span>
+                <strong>Escolher arquivo PDF</strong>
+                <small>Até 5 MB</small>
+              </label>
+              <span class="upload-arquivo-selecionado" aria-live="polite">Nenhum arquivo selecionado</span>
+              <button type="submit">Salvar modelo da OS</button>
+            </form>
+          </article>
+          <article class="settings-modelo-card">
+            <div class="settings-modelo-icon garantia" aria-hidden="true">G</div>
+            <h3>Modelo de Garantia</h3>
+            <p>Guarde o termo de garantia da sua loja para consulta ou download.</p>
+            <form class="form-upload-modelo" data-modelo="garantia">
+              <label class="upload-dropzone">
+                <input type="file" name="arquivo" accept="application/pdf,.pdf" required />
+                <span class="upload-symbol" aria-hidden="true">↑</span>
+                <strong>Escolher arquivo PDF</strong>
+                <small>Até 5 MB</small>
+              </label>
+              <span class="upload-arquivo-selecionado" aria-live="polite">Nenhum arquivo selecionado</span>
+              <button type="submit">Salvar modelo de garantia</button>
+            </form>
+          </article>
+        </div>
+        <p class="settings-notice">Os PDFs ficam guardados como arquivos de referência. Eles não substituem nem preenchem automaticamente os PDFs gerados pela OS.</p>
+        <div class="settings-section-heading settings-arquivos-heading">
+          <div>
+            <h3>Arquivos enviados</h3>
+            <p>Baixe ou remova os modelos armazenados.</p>
+          </div>
+        </div>
+        <div id="lista-modelos-documentos" class="lista-modelos-documentos"></div>
       </div>
 
       <div class="form-box">
@@ -870,5 +931,6 @@
   <script src="js/configuracoes.js"></script>
   <script src="js/tema.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/interacoes.js"></script>
 </body>
 </html>

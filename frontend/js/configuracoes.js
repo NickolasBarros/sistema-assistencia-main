@@ -18,6 +18,7 @@ async function carregarConfiguracoes() {
   }
 
   await carregarTermos();
+  await carregarModelosDocumentos();
 }
 
 // ============================================
@@ -104,6 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
       };
       await apiPut('/configuracoes', dados);
       alert('Configurações salvas!');
+      fecharFormularioCadastro('form-configuracoes');
     });
   }
 

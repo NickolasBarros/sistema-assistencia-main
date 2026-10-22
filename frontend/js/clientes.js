@@ -62,7 +62,7 @@ async function editarCliente(id) {
     document.getElementById('titulo-form-cliente').textContent = 'Editando Cliente';
     document.getElementById('cancel-cliente').style.display = 'inline-block';
     fecharModalCliente();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    abrirFormularioCadastro('form-cliente', 'Editando Cliente');
   } catch (err) {
     alert('Erro ao carregar cliente: ' + err.message);
   }

@@ -48,6 +48,7 @@ async function editarFuncionario(id) {
   document.getElementById('funcionario-telefone').value = f.telefone || '';
   document.getElementById('form-funcionario').dataset.editandoId = f.id;
   document.getElementById('form-funcionario').querySelector('button[type="submit"]').textContent = 'Atualizar';
+  abrirFormularioCadastro('form-funcionario', 'Editar Funcionário');
 }
 
 async function excluirFuncionario(id) {

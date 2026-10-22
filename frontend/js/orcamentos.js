@@ -53,6 +53,7 @@ async function editarOrcamento(id) {
   document.getElementById('orcamento-valor').value = o.valor_total || 0;
   document.getElementById('orcamento-status').value = o.status || 'Pendente';
   document.getElementById('cancel-orcamento').style.display = 'inline-block';
+  abrirFormularioCadastro('form-orcamento', 'Editar Orçamento');
 }
 
 async function excluirOrcamento(id) {

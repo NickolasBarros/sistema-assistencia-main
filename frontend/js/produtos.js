@@ -62,7 +62,7 @@ async function editarProduto(id) {
   document.getElementById('produto-serie').value = p.numero_serie || '';
   document.getElementById('produto-funcionario').value = p.funcionario_id || '';
   document.getElementById('cancel-produto').style.display = 'inline-block';
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  abrirFormularioCadastro('form-produto', 'Editar Produto / Serviço');
 }
 
 async function excluirProduto(id) {

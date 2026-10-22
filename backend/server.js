@@ -16,7 +16,6 @@ const db = require('./database');
 app.use(cors({
   origin: process.env.CORS_ORIGIN || (isProduction ? false : true)
 }));
-app.use(express.json({ limit: '2mb' }));
 
 function safeCompare(value, expected) {
   const valueHash = crypto.createHash('sha256').update(value).digest();
@@ -54,6 +53,7 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+app.use(express.json({ limit: '8mb' }));
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
 app.use('/api/busca', require('./routes/busca'));

@@ -20,35 +20,44 @@ const titulos = {
   calendario: 'Calendário Anual'
 };
 
+const configuracoesNaSidebar = document.querySelector('.nav-item[data-view="configuracoes"]');
+if (configuracoesNaSidebar) {
+  const labelSistema = configuracoesNaSidebar.previousElementSibling;
+  if (labelSistema && labelSistema.classList.contains('nav-section-label')) labelSistema.remove();
+  configuracoesNaSidebar.remove();
+}
+
 document.querySelectorAll('.nav-item').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    btn.classList.add('active');
-
-    const view = btn.dataset.view;
-    const secao = document.getElementById('view-' + view);
-    if (secao) secao.classList.add('active');
-
-    const titulo = document.getElementById('page-title');
-    if (titulo) titulo.textContent = titulos[view] || 'TechGest';
-
-    if (view === 'dashboard') carregarDashboard();
-    if (view === 'clientes') carregarClientes();
-    if (view === 'funcionarios') carregarFuncionarios();
-    if (view === 'produtos') carregarProdutos();
-    if (view === 'ordens') carregarOrdens();
-    if (view === 'kanban') carregarKanban();
-    if (view === 'orcamentos') carregarOrcamentos();
-    if (view === 'vendas') carregarVendas();
-    if (view === 'estoque') carregarEstoque();
-    if (view === 'caixa') carregarCaixa();
-    if (view === 'financeiro') carregarFinanceiro();
-    if (view === 'despesasFixas') carregarDespesasFixas();
-    if (view === 'configuracoes') carregarConfiguracoes();
-    if (view === 'relatorios') carregarRelatorios();
+    navegarParaView(btn.dataset.view, btn);
   });
 });
+
+function navegarParaView(view, navAtiva = null) {
+  document.querySelectorAll('.nav-item').forEach(button => button.classList.toggle('active', button === navAtiva));
+  document.querySelectorAll('.view').forEach(section => section.classList.remove('active'));
+
+  const section = document.getElementById('view-' + view);
+  if (section) section.classList.add('active');
+
+  const title = document.getElementById('page-title');
+  if (title) title.textContent = titulos[view] || 'TechGest';
+
+  if (view === 'dashboard') carregarDashboard();
+  if (view === 'clientes') carregarClientes();
+  if (view === 'funcionarios') carregarFuncionarios();
+  if (view === 'produtos') carregarProdutos();
+  if (view === 'ordens') carregarOrdens();
+  if (view === 'kanban') carregarKanban();
+  if (view === 'orcamentos') carregarOrcamentos();
+  if (view === 'vendas') carregarVendas();
+  if (view === 'estoque') carregarEstoque();
+  if (view === 'caixa') carregarCaixa();
+  if (view === 'financeiro') carregarFinanceiro();
+  if (view === 'despesasFixas') carregarDespesasFixas();
+  if (view === 'configuracoes') carregarConfiguracoes();
+  if (view === 'relatorios') carregarRelatorios();
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   carregarDashboard();
@@ -57,10 +66,8 @@ document.addEventListener('DOMContentLoaded', () => {
     button.addEventListener('click', () => {
       const view = button.dataset.viewShortcut;
       const navButton = document.querySelector(`.nav-item[data-view="${view}"]`);
-      if (navButton) {
-        navButton.click();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
+      navegarParaView(view, navButton);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   });
 });
