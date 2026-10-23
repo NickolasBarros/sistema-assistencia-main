@@ -2,15 +2,13 @@ const { AsyncLocalStorage } = require('node:async_hooks');
 const { Pool } = require('pg');
 const crypto = require('node:crypto');
 const converterSql = require('./postgres-sql');
+const { connectionStringForPool, sslOptionsForMode } = require('./postgres-ssl');
 
 const context = new AsyncLocalStorage();
-const sslMode = (process.env.PGSSLMODE || 'verify-full').toLowerCase();
-if (!['disable', 'require', 'verify-ca', 'verify-full'].includes(sslMode)) {
-  throw new Error('PGSSLMODE inválido. Use disable, require, verify-ca ou verify-full.');
-}
+const sslMode = (process.env.PGSSLMODE || (process.env.NODE_ENV === 'production' ? 'require' : 'verify-full')).toLowerCase();
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: sslMode === 'disable' ? false : { rejectUnauthorized: sslMode !== 'require' },
+  connectionString: connectionStringForPool(process.env.DATABASE_URL),
+  ssl: sslOptionsForMode(sslMode),
   max: Number(process.env.PGPOOL_MAX || 10),
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000
