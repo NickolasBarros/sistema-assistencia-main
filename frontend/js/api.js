@@ -4,6 +4,21 @@ async function respostaErro(res, fallback) {
   const erro = await res.json().catch(() => ({}));
   return new Error(erro.error || fallback);
 }
+async function apiGet(path) {
+    const token = localStorage.getItem('token');
+    const headers = {};
+    
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const res = await fetch(API_URL + path, { headers });
+    
+    if (!res.ok) {
+        throw await respostaErro(res, 'Erro ao buscar ' + path);
+    }
+    return res.json();
+}
 async function apiPost(path, data) {
     const token = localStorage.getItem('token'); // Pega o crachá salvo
     
