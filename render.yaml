@@ -24,6 +24,8 @@ services:
         fromDatabase:
           name: techgest-db
           property: connectionString
+      - key: PGSSLMODE
+        value: require
       - key: UPLOADS_PATH
         value: /var/data/uploads
       - key: JWT_SECRET

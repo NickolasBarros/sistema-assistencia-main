@@ -18,6 +18,8 @@ O [render.yaml](./render.yaml) configura o serviço web, PostgreSQL gerenciado e
 
 As variáveis `JWT_SECRET` e `PLATFORM_ADMIN_TOKEN` são geradas pelo Blueprint. Mantenha-as privadas. `JWT_SECRET` precisa ter no mínimo 32 caracteres. As sessões usam cookies HttpOnly, SameSite=Lax e expiram em oito horas.
 
+O Blueprint define `PGSSLMODE=require`: a conexão com o PostgreSQL continua criptografada, mas não valida a cadeia do certificado, necessário quando o provedor apresenta um certificado autoassinado. Se o banco oferecer uma CA confiável, use `verify-full` para habilitar validação rigorosa do certificado.
+
 O banco começa vazio. Nenhum registro do SQLite local será importado automaticamente. Cada empresa recebe um schema próprio; as rotas de negócio usam o schema vinculado ao usuário autenticado. O PostgreSQL e a pasta `/var/data/uploads` precisam de backups periódicos.
 
 ## Provisionar uma empresa
