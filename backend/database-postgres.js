@@ -236,6 +236,43 @@ async function provisionTenant({ nome, ownerName, email, passwordHash, passwordS
   }
 }
 
+async function resetTenantOwnerAccess(tenantId, email, passwordHash, passwordSalt) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const owner = await client.query(
+      `SELECT u.id
+       FROM public.tenant_users u
+       JOIN public.tenants t ON t.id = u.tenant_id
+       WHERE u.tenant_id = $1 AND u.role = 'owner' AND u.ativo = TRUE AND t.ativo = TRUE
+       FOR UPDATE OF u`,
+      [tenantId]
+    );
+    if (!owner.rowCount) {
+      const error = new Error('Empresa ou responsável ativo não encontrado.');
+      error.code = 'TENANT_OWNER_NOT_FOUND';
+      throw error;
+    }
+
+    const updated = await client.query(
+      `UPDATE public.tenant_users
+       SET email = $1, password_hash = $2, password_salt = $3, trocar_senha = TRUE
+       WHERE id = $4 AND tenant_id = $5
+       RETURNING id, email`,
+      [email.toLowerCase(), passwordHash, passwordSalt, owner.rows[0].id, tenantId]
+    );
+    await client.query('COMMIT');
+    return updated.rows[0];
+  } catch (error) {
+    await client.query('ROLLBACK').catch(rollbackError => {
+      console.error('Falha ao reverter redefinição de acesso:', rollbackError.message);
+    });
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 async function findUserByEmail(email) {
   const result = await pool.query(
     `SELECT u.id, u.tenant_id, u.nome, u.email, u.password_hash, u.password_salt, u.role,
@@ -323,6 +360,7 @@ module.exports = {
   transaction,
   pool,
   provisionTenant,
+  resetTenantOwnerAccess,
   findUserByEmail,
   findSessionUser,
   findUserCredentials,

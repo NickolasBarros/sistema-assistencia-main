@@ -35,6 +35,19 @@ curl --request POST "https://<URL-DO-SERVIÇO>/api/platform/tenants" \
 
 A resposta apresenta uma senha inicial uma única vez. Entregue-a ao responsável por um canal seguro; no primeiro login, ele é obrigado a definir uma senha pessoal de pelo menos 12 caracteres. Depois disso, o responsável pode criar acessos de colaboradores na tela aberta pela engrenagem. Colaboradores têm acesso operacional; não podem gerenciar usuários, alterar cadastros da equipe, consultar módulos financeiros ou modificar configurações da empresa.
 
+### Redefinir o acesso do responsável
+
+Uma pessoa administradora pode redefinir o e-mail e a senha temporária do responsável usando o `PLATFORM_ADMIN_TOKEN`. O `tenantId` é retornado ao criar a empresa; se não estiver disponível, consulte `SELECT id, nome FROM public.tenants;` no PostgreSQL do Render. Execute a chamada em um terminal confiável e não compartilhe o token nem a resposta da senha:
+
+```bash
+curl --request POST "https://<URL-DO-SERVIÇO>/api/platform/tenants/<TENANT_ID>/reset-owner-access" \
+  --header "Content-Type: application/json" \
+  --header "X-Platform-Admin-Token: <SEGREDO-DO-RENDER>" \
+  --data '{"email":"novo-acesso@exemplo.com"}'
+```
+
+A resposta contém uma senha temporária exibida uma única vez. Entregue-a ao responsável por canal seguro. O próximo login exige que ele defina uma senha nova de pelo menos 12 caracteres. Esse procedimento não altera nem expõe a senha anterior.
+
 Nunca inclua `PLATFORM_ADMIN_TOKEN`, senhas iniciais ou `JWT_SECRET` no código-fonte, no navegador ou em mensagens públicas. Se o segredo de provisionamento for exposto, troque-o imediatamente no Render.
 
 ## Ordens, estoque e arquivos

@@ -177,6 +177,40 @@ function requirePlatformToken(req, res, next) {
 }
 
 const platformRouter = express.Router();
+platformRouter.post('/tenants/:tenantId/reset-owner-access', requirePlatformToken, async (req, res) => {
+  if (!db.isPostgres) return res.status(503).json({ error: 'Redefinição de acesso requer DATABASE_URL do PostgreSQL.' });
+  const tenantId = String(req.params.tenantId || '');
+  const email = String(req.body.email || '').trim().toLowerCase();
+  if (!/^[1-9]\d{0,17}$/.test(tenantId)) {
+    return res.status(400).json({ error: 'Identificador da empresa inválido.' });
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
+    return res.status(400).json({ error: 'Informe um e-mail válido para o responsável.' });
+  }
+
+  const temporaryPassword = crypto.randomBytes(24).toString('base64url');
+  try {
+    const credentials = await hashPassword(temporaryPassword);
+    const owner = await db.resetTenantOwnerAccess(
+      tenantId,
+      email,
+      credentials.hash,
+      credentials.salt
+    );
+    res.json({
+      tenantId,
+      responsavel: { email: owner.email },
+      senhaTemporaria: temporaryPassword,
+      aviso: 'Guarde esta senha agora e entregue-a ao responsável por canal seguro. Ela não será exibida novamente; o próximo login exigirá uma nova senha.'
+    });
+  } catch (error) {
+    if (error.code === '23505') return res.status(409).json({ error: 'Esse e-mail já está associado a outra conta.' });
+    if (error.code === 'TENANT_OWNER_NOT_FOUND') return res.status(404).json({ error: error.message });
+    console.error('Falha ao redefinir acesso do responsável:', error.message);
+    res.status(500).json({ error: 'Não foi possível redefinir o acesso da empresa.' });
+  }
+});
+
 platformRouter.post('/tenants', requirePlatformToken, async (req, res) => {
   if (!db.isPostgres) return res.status(503).json({ error: 'Provisionamento de empresas requer DATABASE_URL do PostgreSQL.' });
   const nome = String(req.body.nome || '').trim();
