@@ -4,23 +4,50 @@ async function respostaErro(res, fallback) {
   const erro = await res.json().catch(() => ({}));
   return new Error(erro.error || fallback);
 }
+async function apiPost(path, data) {
+    const token = localStorage.getItem('token'); // Pega o crachá salvo
+    
+    const headers = {
+        'Content-Type': 'application/json'
+    };
+    
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`; // Coloca o crachá se ele existir
+    }
 
-async function apiGet(path) {
-  const res = await fetch(API_URL + path);
-  if (!res.ok) throw await respostaErro(res, 'Erro ao buscar ' + path);
-  return res.json();
+    const res = await fetch(API_URL + path, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(data)
+    });
+    
+    if (!res.ok) {
+        throw await respostaErro(res, 'Erro ao criar');
+    }
+    return res.json();
 }
 
 async function apiPost(path, data) {
-  const res = await fetch(API_URL + path, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
-  if (!res.ok) {
-    throw await respostaErro(res, 'Erro ao criar');
-  }
-  return res.json();
+    const token = localStorage.getItem('token'); // Pega o crachá salvo
+    
+    const headers = {
+        'Content-Type': 'application/json'
+    };
+    
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`; // Coloca o crachá se ele existir
+    }
+
+    const res = await fetch(API_URL + path, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(data)
+    });
+    
+    if (!res.ok) {
+        throw await respostaErro(res, 'Erro ao criar');
+    }
+    return res.json();
 }
 
 async function apiUpload(path, file) {
