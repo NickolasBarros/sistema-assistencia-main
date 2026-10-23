@@ -49,6 +49,14 @@ router.get('/resumo', (req, res) => {
                       'SELECT id, nome, quantidade, estoque_minimo FROM produtos WHERE tipo=? AND quantidade <= estoque_minimo',
                       ['produto'],
                       (e8, r8) => {
+                        if (req.auth?.role === 'staff') {
+                          return res.json({
+                            clientes: result.clientes,
+                            ordens_abertas: result.ordens_abertas,
+                            ordens_total: result.ordens_total,
+                            estoque_baixo: r8 || []
+                          });
+                        }
                         result.estoque_baixo = r8 || [];
                         res.json(result);
                       }
@@ -143,17 +151,25 @@ router.get('/graficos', (req, res) => {
 
               // 4. Top 5 produtos mais vendidos (por quantidade vendida)
               db.all(
-                `SELECT nome, SUM(quantidade) as total_qtd, SUM(preco * quantidade) as total_valor
-                 FROM (
-                   SELECT
-                     json_extract(value, '$.nome') as nome,
-                     json_extract(value, '$.quantidade') as quantidade,
-                     json_extract(value, '$.preco') as preco
-                   FROM vendas, json_each(vendas.itens)
-                 )
-                 GROUP BY nome
-                 ORDER BY total_qtd DESC
-                 LIMIT 5`,
+                db.isPostgres
+                  ? `SELECT item->>'nome' AS nome,
+                            SUM((item->>'quantidade')::numeric) AS total_qtd,
+                            SUM((item->>'preco')::numeric * (item->>'quantidade')::numeric) AS total_valor
+                     FROM vendas, jsonb_array_elements(vendas.itens::jsonb) AS item
+                     GROUP BY item->>'nome'
+                     ORDER BY total_qtd DESC
+                     LIMIT 5`
+                  : `SELECT nome, SUM(quantidade) as total_qtd, SUM(preco * quantidade) as total_valor
+                     FROM (
+                       SELECT
+                         json_extract(value, '$.nome') as nome,
+                         json_extract(value, '$.quantidade') as quantidade,
+                         json_extract(value, '$.preco') as preco
+                       FROM vendas, json_each(vendas.itens)
+                     )
+                     GROUP BY nome
+                     ORDER BY total_qtd DESC
+                     LIMIT 5`,
                 [],
                 (e5, produtos) => {
                   resultado.top_produtos = produtos || [];

@@ -1,5 +1,4 @@
 const cadastros = [
-  { id: 'form-configuracoes', view: 'configuracoes', titulo: 'Dados da Loja', botao: 'Editar dados da loja', preservarFormulario: true },
   { id: 'form-cliente', view: 'clientes', titulo: 'Novo Cliente', botao: 'Novo Cliente' },
   { id: 'form-funcionario', view: 'funcionarios', titulo: 'Novo Funcionário', botao: 'Novo Funcionário' },
   { id: 'form-produto', view: 'produtos', titulo: 'Novo Produto / Serviço', botao: 'Novo Produto ou Serviço' },
@@ -342,5 +341,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   configurarModaisCadastro();
   configurarUploadModelos();
-  carregarModelosDocumentos();
+  window.techgestAuthReady.then(() => {
+    if (!document.body.classList.contains('auth-required') && techgestAuthUser?.role !== 'staff') carregarModelosDocumentos();
+  });
 });

@@ -103,9 +103,12 @@ document.addEventListener('DOMContentLoaded', () => {
         endereco_loja: document.getElementById('conf-endereco').value,
         telefone_loja: document.getElementById('conf-telefone').value
       };
-      await apiPut('/configuracoes', dados);
-      alert('Configurações salvas!');
-      fecharFormularioCadastro('form-configuracoes');
+      try {
+        await apiPut('/configuracoes', dados);
+        alert('Configurações salvas!');
+      } catch (err) {
+        alert('Não foi possível salvar as configurações: ' + err.message);
+      }
     });
   }
 

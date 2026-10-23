@@ -29,8 +29,7 @@ function organizarNavegacao() {
     { titulo: 'Atendimento', views: ['clientes', 'ordens', 'kanban', 'orcamentos'] },
     { titulo: 'Catálogo e equipe', views: ['produtos', 'funcionarios'] },
     { titulo: 'Vendas e estoque', views: ['vendas', 'estoque'] },
-    { titulo: 'Gestão financeira', views: ['caixa', 'financeiro', 'despesasFixas', 'relatorios'] },
-    { titulo: 'Sistema', views: ['configuracoes'] }
+    { titulo: 'Gestão financeira', views: ['caixa', 'financeiro', 'despesasFixas', 'relatorios'] }
   ];
   const views = new Map(Array.from(nav.querySelectorAll('.nav-item'), button => [button.dataset.view, button]));
   const agrupado = document.createDocumentFragment();
@@ -69,11 +68,6 @@ function organizarNavegacao() {
     agrupado.appendChild(section);
   });
 
-  const settings = views.get('configuracoes');
-  const brandGear = document.querySelector('.btn-configuracoes-topo svg');
-  const settingsIcon = settings?.querySelector('svg');
-  if (settingsIcon && brandGear) settingsIcon.replaceWith(brandGear.cloneNode(true));
-
   const siteGroup = document.createElement('section');
   siteGroup.className = 'nav-group nav-site-group';
   const siteLink = document.createElement('a');
@@ -96,6 +90,9 @@ document.querySelectorAll('.nav-item').forEach(btn => {
 });
 
 function navegarParaView(view, navAtiva = null) {
+  if (view === 'configuracoes' && document.body.dataset.role === 'staff') {
+    document.querySelectorAll('#view-configuracoes > .form-box:not(#settings-password), #view-configuracoes > .settings-modelos').forEach(item => item.hidden = true);
+  }
   const grupo = navAtiva?.closest('.nav-group');
   const grupoToggle = grupo?.querySelector('.nav-group-toggle');
   const grupoItems = grupo?.querySelector('.nav-group-items');
@@ -124,13 +121,19 @@ function navegarParaView(view, navAtiva = null) {
   if (view === 'caixa') carregarCaixa();
   if (view === 'financeiro') carregarFinanceiro();
   if (view === 'despesasFixas') carregarDespesasFixas();
-  if (view === 'configuracoes') carregarConfiguracoes();
+  if (view === 'configuracoes' && document.body.dataset.role !== 'staff') {
+    carregarConfiguracoes();
+    carregarEquipe();
+  }
   if (view === 'relatorios') carregarRelatorios();
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  await window.techgestAuthReady;
+  if (document.body.classList.contains('auth-required')) return;
   carregarDashboard();
 
+  document.getElementById('btn-configuracoes-topo')?.addEventListener('click', () => navegarParaView('configuracoes'));
   document.querySelectorAll('[data-view-shortcut]').forEach(button => {
     button.addEventListener('click', () => {
       const view = button.dataset.viewShortcut;

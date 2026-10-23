@@ -1,6 +1,6 @@
-# TechGest — sistema para assistência técnica
+# TechGest — gestão para assistência técnica
 
-Aplicação web para gestão de clientes, ordens de serviço, produtos, vendas, estoque, caixa e financeiro. O backend Express também serve o frontend estático; os dados ficam em SQLite.
+Aplicação web para ordens de serviço, clientes, produtos, vendas, estoque, caixa e financeiro. O backend Express serve a interface e usa SQLite em desenvolvimento; no Render, o Blueprint configura PostgreSQL e autenticação SaaS com dados isolados por empresa.
 
 ## Executar localmente
 
@@ -10,40 +10,43 @@ npm install
 npm start
 ```
 
-Abra `http://localhost:3000`. O banco local é criado em `backend/database.db` por padrão. Para escolher outro arquivo, defina `DATABASE_PATH`.
+Abra `http://localhost:3000`. Sem `DATABASE_URL`, o backend usa SQLite em `backend/database.db` (ou no caminho indicado por `DATABASE_PATH`). Essa modalidade local não exige login nem oferece isolamento SaaS.
 
-## Publicar no Render
+## Render e PostgreSQL
 
-O repositório inclui [render.yaml](./render.yaml), configurado para:
+O [render.yaml](./render.yaml) configura o serviço web, PostgreSQL gerenciado e um disco persistente para PDFs e imagens. O serviço precisa de um plano PostgreSQL compatível com o Blueprint. Configure o Blueprint no Render e confirme seus custos/plano antes de provisionar os recursos.
 
-- Executar o serviço Node.js a partir de `backend/`.
-- Usar `PORT` fornecida pelo Render.
-- Armazenar o SQLite em `/var/data/database.db`.
-- Guardar os PDFs de referência enviados em `/var/data/uploads`.
-- Montar um disco persistente de 1 GB em `/var/data`.
-- Proteger a interface e a API com autenticação HTTP Basic.
-- Expor `/health` para a verificação de saúde do serviço.
+As variáveis `JWT_SECRET` e `PLATFORM_ADMIN_TOKEN` são geradas pelo Blueprint. Mantenha-as privadas. `JWT_SECRET` precisa ter no mínimo 32 caracteres. As sessões usam cookies HttpOnly, SameSite=Lax e expiram em oito horas.
 
-1. Envie o repositório para o GitHub.
-2. No Render, crie um **Blueprint** e selecione este repositório.
-3. Confirme a criação do serviço e do disco persistente definidos no Blueprint.
-4. Após o deploy, abra a URL do serviço. Use o usuário `admin` e a senha gerada para `APP_PASSWORD` nas variáveis de ambiente do serviço. Você pode substituir essa senha no painel do Render.
-5. Confira `https://<URL-DO-SERVIÇO>/health`; a resposta esperada é `{"status":"ok"}`.
+O banco começa vazio. Nenhum registro do SQLite local será importado automaticamente. Cada empresa recebe um schema próprio; as rotas de negócio usam o schema vinculado ao usuário autenticado. O PostgreSQL e a pasta `/var/data/uploads` precisam de backups periódicos.
 
-O disco persistente requer um plano do Render compatível e mantém o SQLite entre reinicializações e novos deploys. Como SQLite não é apropriado para múltiplas instâncias simultâneas, mantenha apenas uma instância do serviço.
+## Provisionar uma empresa
 
-Na tela **Configurações**, é possível enviar um PDF de referência para o modelo de Ordem de Serviço e outro para o modelo de Garantia. Os arquivos ficam no disco persistente, podem ser baixados ou excluídos pela própria tela e têm limite de 5 MB. Eles não alteram os documentos gerados automaticamente pelas ordens de serviço.
+O cadastro de empresas é controlado: não há formulário público de abertura de conta. Uma pessoa administradora deve chamar o endpoint abaixo por uma estação segura, usando o segredo `PLATFORM_ADMIN_TOKEN` guardado no painel do Render:
 
-### Estoque, ordens de serviço e imagens
+```bash
+curl --request POST "https://<URL-DO-SERVIÇO>/api/platform/tenants" \
+  --header "Content-Type: application/json" \
+  --header "X-Platform-Admin-Token: <SEGREDO-DO-RENDER>" \
+  --data '{"nome":"Assistência Exemplo","ownerName":"Responsável","email":"responsavel@exemplo.com"}'
+```
 
-Vendas e peças registradas em uma OS movimentam o estoque automaticamente; cancelar ou excluir esses registros devolve as unidades ao estoque. O sistema impede saídas acima do saldo disponível. Produtos e ordens de serviço aceitam até cinco imagens PNG, JPEG ou WebP, de no máximo 5 MB cada. As imagens também são salvas no disco persistente do Render e são removidas quando o registro correspondente é excluído.
+A resposta apresenta uma senha inicial uma única vez. Entregue-a ao responsável por um canal seguro; no primeiro login, ele é obrigado a definir uma senha pessoal de pelo menos 12 caracteres. Depois disso, o responsável pode criar acessos de colaboradores na tela aberta pela engrenagem. Colaboradores têm acesso operacional; não podem gerenciar usuários, alterar cadastros da equipe, consultar módulos financeiros ou modificar configurações da empresa.
 
-### Dados existentes
+Nunca inclua `PLATFORM_ADMIN_TOKEN`, senhas iniciais ou `JWT_SECRET` no código-fonte, no navegador ou em mensagens públicas. Se o segredo de provisionamento for exposto, troque-o imediatamente no Render.
 
-O disco do Render começa vazio: o `backend/database.db` do computador não é enviado automaticamente. Faça uma cópia de segurança e transfira o banco para `/var/data/database.db` antes de usar o sistema com dados reais. Não publique o arquivo do banco no GitHub. Faça cópias de segurança periódicas do disco.
+## Ordens, estoque e arquivos
 
-### Acesso e segurança
+Vendas e peças registradas em uma OS movimentam o estoque automaticamente; cancelamentos e exclusões devolvem unidades. O sistema impede saldo negativo. A OS mantém uma linha do tempo auditável de criação e mudanças de status, associada ao usuário autenticado quando disponível. Produtos e ordens aceitam até cinco imagens PNG, JPEG ou WebP, com até 5 MB por arquivo. PDFs de referência de OS e garantia também têm limite de 5 MB e não alteram os documentos gerados automaticamente.
 
-O Render cria um segredo inicial para `APP_PASSWORD`; a autenticação usa o usuário fixo `admin` e esse segredo compartilhado. Isso evita deixar a aplicação aberta publicamente, mas **não** substitui usuários individuais, permissões por funcionário ou autenticação completa. Antes de usar com vários colaboradores ou dados sensíveis em produção, implemente esses controles.
+## Escopo ainda não integrado
 
-Em produção, o servidor não inicia se `APP_PASSWORD` não estiver configurada. Localmente, a autenticação é opcional; para ativá-la, defina `APP_PASSWORD` antes de iniciar o backend.
+O sistema não inclui atualmente provedor de WhatsApp, emissão de NFS-e/NFC-e, cobrança recorrente, assinatura de planos nem fluxo de aprovação de OS pelo cliente. Esses recursos dependem de escolha de provedor, credenciais e regras de negócio e devem ser implementados antes de serem anunciados como funcionalidades disponíveis.
+
+## Testes
+
+```bash
+npm test --prefix backend
+```
+
+Os testes de integração usam banco SQLite temporário. Para uma implantação, também valide conexão, provisionamento e isolamento em um PostgreSQL de staging antes de encaminhar dados reais.

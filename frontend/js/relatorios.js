@@ -27,6 +27,19 @@ async function carregarRelatorios() {
 
 async function carregarDashboard() {
   const r = await apiGet('/relatorios/resumo');
+  if (techgestAuthUser?.role === 'staff') {
+    const elC = document.getElementById('kpi-clientes');
+    const elO = document.getElementById('kpi-ordens');
+    if (elC) elC.textContent = r.clientes;
+    if (elO) elO.textContent = r.ordens_abertas;
+    const div = document.getElementById('lista-estoque-baixo');
+    if (div) {
+      div.innerHTML = r.estoque_baixo?.length
+        ? r.estoque_baixo.map(p => `<div class="item"><strong>${p.nome}</strong> — Qtd: ${p.quantidade} (mín: ${p.estoque_minimo})</div>`).join('')
+        : '<div class="vazio">Nenhum produto com estoque baixo</div>';
+    }
+    return;
+  }
   const hoje = await apiGet('/relatorios/lucro-diario');
 
   const elA = document.getElementById('dash-assistencia');

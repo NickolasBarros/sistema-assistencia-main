@@ -7,7 +7,33 @@
   <link rel="icon" type="image/svg+xml" href="images/techgest-logo.svg" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
-<body>
+<body class="auth-checking">
+  <section class="login-screen" id="login-screen" aria-labelledby="login-title" hidden>
+    <div class="login-panel">
+      <img src="images/techgest-logo.svg" alt="" class="login-logo" />
+      <span class="eyebrow">GESTÃO INTELIGENTE</span>
+      <h1 id="login-title">Acesse seu TechGest</h1>
+      <p>Entre com o acesso da sua assistência técnica.</p>
+      <form id="login-form">
+        <label for="login-email">E-mail</label>
+        <input id="login-email" name="email" type="email" autocomplete="username" required maxlength="254" />
+        <label for="login-password">Senha</label>
+        <input id="login-password" name="password" type="password" autocomplete="current-password" required />
+        <p class="login-error" id="login-error" role="alert"></p>
+        <button type="submit" id="login-submit">Entrar</button>
+      </form>
+      <form id="force-password-form" hidden>
+        <label for="force-password-current">Senha inicial</label>
+        <input id="force-password-current" name="currentPassword" type="password" autocomplete="current-password" required />
+        <label for="force-password-new">Nova senha (mínimo 12 caracteres)</label>
+        <input id="force-password-new" name="newPassword" type="password" autocomplete="new-password" minlength="12" required />
+        <p class="login-error" id="force-password-error" role="alert"></p>
+        <button type="submit" id="force-password-submit">Definir nova senha</button>
+      </form>
+      <small>Precisa de acesso? Fale com o administrador do TechGest.</small>
+    </div>
+  </section>
+
   <aside class="sidebar">
     <div class="logo">
       <img src="images/techgest-logo.svg" alt="Logo TechGest" />
@@ -71,11 +97,6 @@
         <span>Despesas Fixas</span>
 
       </button>
-      <span class="nav-section-label">Sistema</span>
-      <button class="nav-item" data-view="configuracoes">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        <span>Configurações</span>
-      </button>
       <button class="nav-item" data-view="relatorios">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="3" y1="20" x2="21" y2="20"/></svg>
         <span>Relatórios</span>
@@ -117,10 +138,11 @@
             <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
           </svg>
         </button>
-        <button type="button" class="btn-configuracoes-topo" data-view-shortcut="configuracoes" title="Configurações da loja">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8.25a3.75 3.75 0 1 0 0 7.5 3.75 3.75 0 0 0 0-7.5Z"/><path d="m19.4 15 .06.06a1.7 1.7 0 1 1-2.4 2.4l-.06-.06a1.7 1.7 0 0 0-2.9 1.2v.15a1.7 1.7 0 1 1-3.4 0v-.1a1.7 1.7 0 0 0-2.9-1.2l-.06.06a1.7 1.7 0 1 1-2.4-2.4l.06-.06a1.7 1.7 0 0 0-1.2-2.9h-.15a1.7 1.7 0 1 1 0-3.4h.1a1.7 1.7 0 0 0 1.2-2.9l-.06-.06a1.7 1.7 0 1 1 2.4-2.4l.06.06a1.7 1.7 0 0 0 2.9-1.2v-.15a1.7 1.7 0 1 1 3.4 0v.1a1.7 1.7 0 0 0 2.9 1.2l.06-.06a1.7 1.7 0 1 1 2.4 2.4l-.06.06a1.7 1.7 0 0 0 1.2 2.9h.15a1.7 1.7 0 1 1 0 3.4h-.1a1.7 1.7 0 0 0-1.2 2.9Z"/></svg>
-          <span>Configurações</span>
+        <span class="account-label" id="account-label" hidden></span>
+        <button type="button" class="btn-configuracoes-topo" id="btn-configuracoes-topo" title="Configurações da loja" aria-label="Abrir configurações da loja">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a1.9 1.9 0 1 1-2.69 2.69l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56v.17a1.9 1.9 0 1 1-3.8 0v-.09a1.7 1.7 0 0 0-1.1-1.58 1.7 1.7 0 0 0-1.86.35l-.06.06a1.9 1.9 0 1 1-2.69-2.69l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.03h-.17a1.9 1.9 0 1 1 0-3.8h.09a1.7 1.7 0 0 0 1.58-1.1 1.7 1.7 0 0 0-.35-1.86l-.06-.06a1.9 1.9 0 1 1 2.69-2.69l.06.06a1.7 1.7 0 0 0 1.87.34 1.7 1.7 0 0 0 1.03-1.56v-.17a1.9 1.9 0 1 1 3.8 0v.09a1.7 1.7 0 0 0 1.1 1.58 1.7 1.7 0 0 0 1.86-.35l.06-.06a1.9 1.9 0 1 1 2.69 2.69l-.06.06a1.7 1.7 0 0 0-.34 1.87 1.7 1.7 0 0 0 1.56 1.03h.17a1.9 1.9 0 1 1 0 3.8h-.09a1.7 1.7 0 0 0-1.58 1.1Z"/></svg>
         </button>
+        <button type="button" class="btn-sair" id="btn-sair" hidden>Sair</button>
       </div>
     </header>
 
@@ -689,6 +711,32 @@
         </form>
       </div>
 
+      <div class="form-box settings-team" id="settings-team">
+        <div class="settings-section-heading">
+          <div>
+            <span class="eyebrow">ACESSO DA EQUIPE</span>
+            <h2>Usuários e permissões</h2>
+            <p>O responsável administra os acessos. Colaboradores têm acesso operacional, sem dados financeiros ou configurações.</p>
+          </div>
+        </div>
+        <form id="form-equipe" class="settings-team-form">
+          <input id="equipe-nome" placeholder="Nome do colaborador" maxlength="120" required />
+          <input id="equipe-email" type="email" placeholder="E-mail de acesso" maxlength="254" required />
+          <button type="submit">＋ Criar acesso</button>
+        </form>
+        <p id="equipe-credencial" class="equipe-credencial" role="status" hidden></p>
+        <div id="lista-equipe" class="settings-team-list" aria-live="polite"></div>
+      </div>
+
+      <div class="form-box settings-team" id="settings-password">
+        <h2>Alterar minha senha</h2>
+        <form id="form-alterar-senha" class="settings-team-form">
+          <input id="senha-atual" type="password" placeholder="Senha atual" autocomplete="current-password" required />
+          <input id="senha-nova" type="password" placeholder="Nova senha (mínimo 12 caracteres)" autocomplete="new-password" minlength="12" required />
+          <button type="submit">Atualizar senha</button>
+        </form>
+      </div>
+
       <div class="settings-modelos">
         <div class="settings-section-heading">
           <div>
@@ -950,6 +998,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="js/busca.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
   <script src="js/clientes.js"></script>
   <script src="js/funcionarios.js"></script>
   <script src="js/produtos.js"></script>

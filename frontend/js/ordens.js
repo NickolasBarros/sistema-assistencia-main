@@ -285,6 +285,10 @@ async function verOrdem(id) {
     <div class="info-linha"><strong>Garantia até</strong><span>${o.garantia_ate ? formatDate(o.garantia_ate) : '-'}</span></div>
     <div class="info-linha"><strong>Fotos do aparelho</strong><span>Imagens registradas nesta OS</span></div>
     <div class="os-fotos" id="detalhe-os-fotos"></div>
+    <section class="os-historico">
+      <h3>Linha do tempo</h3>
+      <ol id="detalhe-os-historico" class="os-historico-lista" aria-live="polite"></ol>
+    </section>
   `;
 
   abrirModalVer('Detalhes da OS', html);
@@ -292,6 +296,38 @@ async function verOrdem(id) {
     await carregarMidias('ordem', o.id, 'detalhe-os-fotos');
   } catch (err) {
     console.error('Erro ao carregar fotos da OS:', err);
+  }
+  await carregarHistoricoOS(o.id);
+}
+
+async function carregarHistoricoOS(id) {
+  const lista = document.getElementById('detalhe-os-historico');
+  if (!lista) return;
+  lista.replaceChildren();
+
+  try {
+    const eventos = await apiGet(`/ordens/${id}/historico`);
+    if (!eventos.length) {
+      lista.textContent = 'Nenhuma alteração de status registrada.';
+      return;
+    }
+
+    eventos.forEach(evento => {
+      const item = document.createElement('li');
+      item.className = 'os-historico-item';
+      const status = document.createElement('strong');
+      status.textContent = evento.status_anterior
+        ? `${evento.status_anterior} → ${evento.status_novo}`
+        : `OS criada como ${evento.status_novo}`;
+      const detalhe = document.createElement('span');
+      const instante = new Date(evento.criado_em);
+      const data = Number.isNaN(instante.getTime()) ? '-' : instante.toLocaleString('pt-BR');
+      detalhe.textContent = `${data}${evento.alterado_por ? ` · ${evento.alterado_por}` : ''}`;
+      item.append(status, detalhe);
+      lista.append(item);
+    });
+  } catch (err) {
+    lista.textContent = `Não foi possível carregar o histórico: ${err.message}`;
   }
 }
 

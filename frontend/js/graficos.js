@@ -264,7 +264,9 @@ function trocarTipoGrafico(tipo) {
 // INICIALIZAÇÃO
 // ============================================
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  await window.techgestAuthReady;
+  if (document.body.classList.contains('auth-required') || techgestAuthUser?.role === 'staff') return;
   // Só carrega se o dashboard estiver visível
   const dash = document.getElementById('view-dashboard');
   if (dash && dash.classList.contains('active')) {
@@ -275,7 +277,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Recarrega os gráficos quando volta para o Dashboard
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('.nav-item[data-view="dashboard"]');
-  if (btn) {
+  if (btn && techgestAuthUser?.role !== 'staff') {
     setTimeout(carregarGraficos, 300);
   }
 });

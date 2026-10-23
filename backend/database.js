@@ -1,3 +1,9 @@
+if (process.env.DATABASE_URL) {
+  module.exports = require('./database-postgres');
+} else {
+if (process.env.NODE_ENV === 'production') {
+  throw new Error('DATABASE_URL do PostgreSQL é obrigatória em produção.');
+}
 const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
 const path = require('path');
@@ -189,6 +195,14 @@ async function initialize() {
       observacao TEXT,
       data_pagamento DATETIME DEFAULT CURRENT_TIMESTAMP
     )`,
+    `CREATE TABLE IF NOT EXISTS os_status_historico (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ordem_id INTEGER NOT NULL,
+      status_anterior TEXT,
+      status_novo TEXT NOT NULL,
+      alterado_por TEXT,
+      criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`,
     `CREATE TABLE IF NOT EXISTS configuracoes (
       chave TEXT PRIMARY KEY,
       valor TEXT
@@ -230,6 +244,7 @@ async function initialize() {
 
   for (const statement of schema) await run(statement);
 
+  await run('CREATE INDEX IF NOT EXISTS idx_os_status_historico_ordem ON os_status_historico (ordem_id, id)');
   await ensureColumn('ordens', 'mao_de_obra', "TEXT DEFAULT '[]'");
   await ensureColumn('ordens', 'produtos_vendidos', "TEXT DEFAULT '[]'");
   await ensureColumn('ordens', 'garantia_ate', 'DATETIME');
@@ -241,5 +256,7 @@ db.runAsync = runAsync;
 db.getAsync = getAsync;
 db.allAsync = allAsync;
 db.transaction = transaction;
+db.isPostgres = false;
 
 module.exports = db;
+}

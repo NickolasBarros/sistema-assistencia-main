@@ -146,6 +146,10 @@ router.post('/', async (req, res) => {
         ]
       );
       await atualizarEstoqueOS(tx, inserido.lastID, [], estado === 'Cancelada' ? [] : produtosNovos);
+      await tx.run(
+        'INSERT INTO os_status_historico (ordem_id, status_anterior, status_novo, alterado_por) VALUES (?, ?, ?, ?)',
+        [inserido.lastID, null, estado, req.auth?.nome || null]
+      );
       return inserido.lastID;
     });
     res.status(201).json({ id: ordem });
@@ -207,8 +211,15 @@ router.put('/:id', async (req, res) => {
           dataSaidaFinal, garantiaAte, req.params.id
         ]
       );
+      const novoStatus = status || antiga.status;
+      if (novoStatus !== antiga.status) {
+        await tx.run(
+          'INSERT INTO os_status_historico (ordem_id, status_anterior, status_novo, alterado_por) VALUES (?, ?, ?, ?)',
+          [req.params.id, antiga.status, novoStatus, req.auth?.nome || null]
+        );
+      }
       const produtosAntigos = antiga.status === 'Cancelada' ? [] : lerProdutosOS(antiga.produtos_vendidos);
-      const produtosAtuais = (status || antiga.status) === 'Cancelada' ? [] : produtosNovos;
+      const produtosAtuais = novoStatus === 'Cancelada' ? [] : produtosNovos;
       await atualizarEstoqueOS(tx, Number(req.params.id), produtosAntigos, produtosAtuais);
       const pago = Number(antiga.valor_pago || 0);
       await tx.run('UPDATE ordens SET quitado = ? WHERE id = ?', [pago >= total ? 1 : 0, req.params.id]);
@@ -223,6 +234,21 @@ router.get('/:id/pagamentos', (req, res) => {
   db.all('SELECT * FROM os_pagamentos WHERE ordem_id = ? ORDER BY id DESC', [req.params.id], (err, rows) => {
     if (err) return res.status(500).json({ error: 'Não foi possível carregar os pagamentos da OS.' });
     res.json(rows);
+  });
+});
+
+router.get('/:id/historico', (req, res) => {
+  db.get('SELECT id FROM ordens WHERE id = ?', [req.params.id], (ordemErr, ordem) => {
+    if (ordemErr) return res.status(500).json({ error: 'Não foi possível validar a ordem de serviço.' });
+    if (!ordem) return res.status(404).json({ error: 'OS não encontrada.' });
+    db.all(
+      'SELECT id, status_anterior, status_novo, alterado_por, criado_em FROM os_status_historico WHERE ordem_id = ? ORDER BY id ASC',
+      [req.params.id],
+      (err, rows) => {
+        if (err) return res.status(500).json({ error: 'Não foi possível carregar a linha do tempo da OS.' });
+        res.json(rows);
+      }
+    );
   });
 });
 
@@ -306,6 +332,7 @@ router.delete('/:id', async (req, res) => {
       await tx.run('DELETE FROM caixa WHERE descricao LIKE ?', [`Pagamento OS #${req.params.id}%`]);
       await tx.run('DELETE FROM caixa WHERE descricao LIKE ?', [`OS #${req.params.id} - %`]);
       await tx.run('DELETE FROM os_pagamentos WHERE ordem_id = ?', [req.params.id]);
+      await tx.run('DELETE FROM os_status_historico WHERE ordem_id = ?', [req.params.id]);
       const midias = await tx.all("SELECT nome_arquivo FROM midias WHERE entidade_tipo = 'ordem' AND entidade_id = ?", [req.params.id]);
       await tx.run("DELETE FROM midias WHERE entidade_tipo = 'ordem' AND entidade_id = ?", [req.params.id]);
       await tx.run('DELETE FROM ordens WHERE id = ?', [req.params.id]);

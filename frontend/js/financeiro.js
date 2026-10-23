@@ -300,8 +300,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  iniciarAutoRefresh();
-  atualizarIndicador();
+  window.techgestAuthReady.then(() => {
+    if (techgestAuthUser?.role !== 'staff') {
+      iniciarAutoRefresh();
+      atualizarIndicador();
+    }
+  });
 });
 
 // ============================================

@@ -9,6 +9,7 @@ const net = require('node:net');
 let server;
 let baseUrl;
 let testDirectory;
+let serverLogs = '';
 
 async function portaLivre() {
   return new Promise((resolve, reject) => {
@@ -22,15 +23,18 @@ async function portaLivre() {
 }
 
 async function esperarServidor(url) {
-  const limite = Date.now() + 10000;
+  const limite = Date.now() + 30000;
   while (Date.now() < limite) {
     try {
       const resposta = await fetch(`${url}/health`);
       if (resposta.ok) return;
     } catch {}
+    if (server?.exitCode !== null && server?.exitCode !== undefined) {
+      throw new Error(`O servidor de teste encerrou antes de ficar pronto. Saída: ${serverLogs}`);
+    }
     await new Promise(resolve => setTimeout(resolve, 100));
   }
-  throw new Error('O servidor de teste não iniciou no prazo esperado.');
+  throw new Error(`O servidor de teste não iniciou no prazo esperado. Saída: ${serverLogs}`);
 }
 
 async function request(pathname, options = {}) {
@@ -56,11 +60,11 @@ before(async () => {
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
-  let logs = '';
-  server.stdout.on('data', chunk => { logs += chunk; });
-  server.stderr.on('data', chunk => { logs += chunk; });
+  serverLogs = '';
+  server.stdout.on('data', chunk => { serverLogs += chunk; });
+  server.stderr.on('data', chunk => { serverLogs += chunk; });
   server.on('exit', code => {
-    if (code && code !== 0) console.error('Servidor de teste encerrou:', logs);
+    if (code && code !== 0) console.error('Servidor de teste encerrou:', serverLogs);
   });
   await esperarServidor(baseUrl);
 });
@@ -74,6 +78,9 @@ after(async () => {
 });
 
 test('cliente, estoque, venda, OS, imagens e preservação de histórico funcionam em conjunto', async () => {
+  const authStatus = await json(await request('/api/auth/status'));
+  assert.deepEqual(authStatus, { authenticationRequired: false });
+
   const clienteResponse = await request('/api/clientes', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -182,6 +189,10 @@ test('cliente, estoque, venda, OS, imagens e preservação de histórico funcion
   });
   assert.equal(osResponse.status, 201);
   const ordem = await json(osResponse);
+  const historicoInicial = await json(await request(`/api/ordens/${ordem.id}/historico`));
+  assert.equal(historicoInicial.length, 1);
+  assert.equal(historicoInicial[0].status_anterior, null);
+  assert.equal(historicoInicial[0].status_novo, 'Aberta');
   produtos = await json(await request('/api/produtos'));
   assert.equal(produtos.find(item => item.id === produto.id).quantidade, 1);
 
@@ -214,6 +225,12 @@ test('cliente, estoque, venda, OS, imagens e preservação de histórico funcion
 
   const removerPeca = await atualizarOs('Em Reparo', []);
   assert.equal(removerPeca.status, 200);
+  const historicoOS = await json(await request(`/api/ordens/${ordem.id}/historico`));
+  assert.deepEqual(historicoOS.map(evento => [evento.status_anterior, evento.status_novo]), [
+    [null, 'Aberta'],
+    ['Aberta', 'Cancelada'],
+    ['Cancelada', 'Em Reparo']
+  ]);
   produtos = await json(await request('/api/produtos'));
   assert.equal(produtos.find(item => item.id === produto.id).quantidade, 3);
 
@@ -252,6 +269,7 @@ test('cliente, estoque, venda, OS, imagens e preservação de histórico funcion
 
   const excluirOs = await request(`/api/ordens/${ordem.id}`, { method: 'DELETE' });
   assert.equal(excluirOs.status, 200);
+  assert.equal((await request(`/api/ordens/${ordem.id}/historico`)).status, 404);
   const ordemFotos = await json(await request(`/api/midias/entidade/ordem/${ordem.id}`));
   assert.deepEqual(ordemFotos, []);
   const imagemRemovida = await request(midiaOrdem.url);
