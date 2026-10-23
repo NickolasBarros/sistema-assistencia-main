@@ -91,8 +91,11 @@ async function moverOrdemParaStatus(ordemId, novoStatus) {
       defeito: ordem.defeito,
       servico_realizado: ordem.servico_realizado,
       pecas_utilizadas: ordem.pecas_utilizadas,
+      mao_de_obra: ordem.mao_de_obra || '[]',
+      produtos_vendidos: ordem.produtos_vendidos || '[]',
       valor: ordem.valor,
-      status: novoStatus
+      status: novoStatus,
+      data_saida: ordem.data_saida || null
     });
 
     carregarKanban();

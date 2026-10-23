@@ -12,12 +12,26 @@ const cadastros = [
   { id: 'form-despesa-fixa', view: 'despesasFixas', titulo: 'Nova Despesa Fixa', botao: 'Nova Despesa Fixa' }
 ];
 
+let modalSequencia = 1000;
+
+function fecharModalTopo() {
+  const ativos = Array.from(document.querySelectorAll('.modal-overlay.active'));
+  const topo = ativos.reduce((atual, modal) => {
+    if (!atual) return modal;
+    return Number(modal.style.zIndex) > Number(atual.style.zIndex) ? modal : atual;
+  }, null);
+  if (!topo) return;
+  topo.classList.remove('active');
+  if (!document.querySelector('.modal-overlay.active')) document.body.classList.remove('modal-aberto');
+}
+
 function abrirFormularioCadastro(id, titulo = null) {
   const modal = document.querySelector(`[data-form-modal="${id}"]`);
   if (!modal) return;
   const cadastro = cadastros.find(item => item.id === id);
   const title = modal.querySelector('.cadastro-modal-heading h2');
   if (title) title.textContent = titulo || cadastro?.titulo || 'Cadastro';
+  modal.style.zIndex = String(++modalSequencia);
   modal.classList.add('active');
   document.body.classList.add('modal-aberto');
   const primeiroCampo = modal.querySelector('input:not([type="hidden"]), select, textarea');
@@ -30,7 +44,7 @@ function fecharFormularioCadastro(modal) {
     : modal;
   if (!overlay) return;
   overlay.classList.remove('active');
-  document.body.classList.remove('modal-aberto');
+  if (!document.querySelector('.modal-overlay.active')) document.body.classList.remove('modal-aberto');
 }
 
 function prepararNovoCadastro(form) {
@@ -134,14 +148,75 @@ function configurarModaisCadastro() {
     view.insertBefore(toolbar, view.firstChild);
   });
 
-  document.addEventListener('keydown', event => {
-    if (event.key !== 'Escape') return;
-    document.querySelectorAll('.cadastro-modal.active').forEach(fecharFormularioCadastro);
-  });
 }
 
 function nomeModelo(tipo) {
   return tipo === 'os' ? 'Ordem de Serviço' : 'Garantia';
+}
+
+function previewArquivosImagem(input, containerId) {
+  const preview = document.getElementById(containerId);
+  if (!preview) return;
+  preview.querySelectorAll('.arquivo-preview').forEach(image => image.remove());
+  Array.from(input.files || []).forEach(file => {
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return;
+    const image = document.createElement('img');
+    image.className = 'arquivo-preview';
+    image.alt = file.name;
+    image.src = URL.createObjectURL(file);
+    image.addEventListener('load', () => URL.revokeObjectURL(image.src), { once: true });
+    preview.appendChild(image);
+  });
+}
+
+async function carregarMidias(tipo, id, containerId, permitirExcluir = false) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const midias = await apiGet(`/midias/entidade/${tipo}/${id}`);
+  container.replaceChildren();
+  midias.forEach(midia => {
+    const image = document.createElement('img');
+    image.src = `/api/midias/${midia.id}/arquivo`;
+    image.alt = `Imagem do registro ${id}`;
+    image.loading = 'lazy';
+    if (permitirExcluir) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'imagem-preview-item';
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'imagem-remover';
+      remove.textContent = '×';
+      remove.setAttribute('aria-label', 'Excluir imagem');
+      remove.addEventListener('click', async () => {
+        if (!confirm('Remover esta imagem?')) return;
+        try {
+          await apiDelete(`/midias/${midia.id}`);
+          await carregarMidias(tipo, id, containerId, permitirExcluir);
+        } catch (err) {
+          alert('Não foi possível excluir a imagem: ' + err.message);
+        }
+      });
+      wrapper.append(image, remove);
+      container.appendChild(wrapper);
+    } else {
+      const link = document.createElement('a');
+      link.href = image.src;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.appendChild(image);
+      container.appendChild(link);
+    }
+  });
+  return midias;
+}
+
+function validarArquivosImagem(files) {
+  for (const file of files) {
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      throw new Error('Use imagens JPG, PNG ou WebP.');
+    }
+    if (file.size > 5 * 1024 * 1024) throw new Error('Cada imagem deve ter no máximo 5 MB.');
+  }
 }
 
 async function carregarModelosDocumentos() {
@@ -250,6 +325,21 @@ function configurarUploadModelos() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.modal-overlay.active').forEach(modal => {
+    modal.style.zIndex = String(++modalSequencia);
+  });
+  const modalObserver = new MutationObserver(records => {
+    records.forEach(record => {
+      const modal = record.target;
+      if (modal.classList.contains('active')) modal.style.zIndex = String(++modalSequencia);
+    });
+  });
+  document.querySelectorAll('.modal-overlay').forEach(modal => {
+    modalObserver.observe(modal, { attributes: true, attributeFilter: ['class'] });
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') fecharModalTopo();
+  });
   configurarModaisCadastro();
   configurarUploadModelos();
   carregarModelosDocumentos();

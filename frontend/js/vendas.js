@@ -100,11 +100,21 @@ document.addEventListener('DOMContentLoaded', () => {
     btnAdd.addEventListener('click', () => {
       const sel = document.getElementById('venda-produto');
       const opt = sel.options[sel.selectedIndex];
-      const qtd = parseInt(document.getElementById('venda-qtd').value) || 1;
+      const qtd = Number(document.getElementById('venda-qtd').value);
       if (!sel.value) return alert('Selecione um produto/serviço');
+      if (!Number.isInteger(qtd) || qtd < 1) return alert('Informe uma quantidade inteira maior que zero.');
+
+      const produtoId = Number(sel.value);
+      if (opt.dataset.tipo === 'produto') {
+        const disponivel = Number(opt.dataset.stock) - itensVenda
+          .filter(item => item.produto_id === produtoId && item.tipo === 'produto')
+          .reduce((total, item) => total + item.quantidade, 0);
+        if (qtd > disponivel) return alert(`Estoque insuficiente. Disponível para adicionar: ${disponivel}.`);
+      }
 
       itensVenda.push({
-        produto_id: parseInt(sel.value),
+        produto_id: produtoId,
+        tipo: opt.dataset.tipo,
         nome: opt.dataset.nome,
         preco: parseFloat(opt.dataset.preco),
         quantidade: qtd,
@@ -126,19 +136,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const total = itensVenda.reduce((s, i) => s + i.preco * i.quantidade, 0);
 
-      await apiPost('/vendas', {
-        cliente_id: parseInt(document.getElementById('venda-cliente').value) || null,
-        funcionario_id: parseInt(document.getElementById('venda-funcionario').value) || null,
-        itens: itensVenda,
-        valor_total: total,
-        forma_pagamento: document.getElementById('venda-pagamento').value
-      });
-
+      const submit = form.querySelector('button[type="submit"]');
+      submit.disabled = true;
+      try {
+        await apiPost('/vendas', {
+          cliente_id: parseInt(document.getElementById('venda-cliente').value) || null,
+          funcionario_id: parseInt(document.getElementById('venda-funcionario').value) || null,
+          itens: itensVenda,
+          valor_total: total,
+          forma_pagamento: document.getElementById('venda-pagamento').value
+        });
+      } catch (err) {
+        alert('Não foi possível concluir a venda: ' + err.message);
+        return;
+      } finally {
+        submit.disabled = false;
+      }
       itensVenda = [];
       renderItensVenda();
       form.reset();
-      carregarVendas();
-      carregarProdutos();
+      const atualizacoes = await Promise.allSettled([
+        carregarVendas(),
+        carregarProdutos(),
+        carregarDashboard()
+      ]);
+      const falha = atualizacoes.find(resultado => resultado.status === 'rejected');
+      if (falha) alert('Venda registrada, mas alguns painéis não puderam ser atualizados: ' + (falha.reason?.message || String(falha.reason)));
     });
   }
 

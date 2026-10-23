@@ -1,8 +1,13 @@
 const API_URL = '/api';
 
+async function respostaErro(res, fallback) {
+  const erro = await res.json().catch(() => ({}));
+  return new Error(erro.error || fallback);
+}
+
 async function apiGet(path) {
   const res = await fetch(API_URL + path);
-  if (!res.ok) throw new Error('Erro ao buscar ' + path);
+  if (!res.ok) throw await respostaErro(res, 'Erro ao buscar ' + path);
   return res.json();
 }
 
@@ -13,9 +18,18 @@ async function apiPost(path, data) {
     body: JSON.stringify(data)
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || 'Erro ao criar');
+    throw await respostaErro(res, 'Erro ao criar');
   }
+  return res.json();
+}
+
+async function apiUpload(path, file) {
+  const res = await fetch(API_URL + path, {
+    method: 'POST',
+    headers: { 'Content-Type': file.type },
+    body: file
+  });
+  if (!res.ok) throw await respostaErro(res, 'Erro ao enviar arquivo');
   return res.json();
 }
 
@@ -25,13 +39,13 @@ async function apiPut(path, data) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   });
-  if (!res.ok) throw new Error('Erro ao atualizar');
+  if (!res.ok) throw await respostaErro(res, 'Erro ao atualizar');
   return res.json();
 }
 
 async function apiDelete(path) {
   const res = await fetch(API_URL + path, { method: 'DELETE' });
-  if (!res.ok) throw new Error('Erro ao deletar');
+  if (!res.ok) throw await respostaErro(res, 'Erro ao deletar');
   return res.json();
 }
 
@@ -74,7 +88,4 @@ document.addEventListener('DOMContentLoaded', () => {
       if (e.target === modal) fecharModalVer();
     });
   }
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') fecharModalVer();
-  });
 });

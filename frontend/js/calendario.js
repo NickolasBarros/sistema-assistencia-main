@@ -234,13 +234,4 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ESC fecha os modais
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      fecharModalDia();
-      // Só fecha o calendário se o dia não estiver aberto
-      const diaAberto = document.getElementById('modal-dia').classList.contains('active');
-      if (!diaAberto) fecharModalCalendario();
-    }
-  });
 });

@@ -17,27 +17,45 @@ router.get('/movimentacoes', (req, res) => {
   );
 });
 
-router.post('/movimentar', (req, res) => {
+router.post('/movimentar', async (req, res) => {
   const { produto_id, funcionario_id, tipo, quantidade, observacao } = req.body;
-  if (!produto_id || !tipo || !quantidade) {
-    return res.status(400).json({ error: 'Dados incompletos' });
+  const id = Number(produto_id);
+  const qtd = Number(quantidade);
+  if (!Number.isInteger(id) || id < 1 || !Number.isInteger(qtd) || qtd < 1 || !['entrada', 'saida'].includes(tipo)) {
+    return res.status(400).json({ error: 'Selecione um produto e informe uma quantidade inteira maior que zero.' });
   }
-  db.get('SELECT quantidade FROM produtos WHERE id=?', [produto_id], (err, row) => {
-    if (err || !row) return res.status(404).json({ error: 'Produto não encontrado' });
-
-    const novaQtd = tipo === 'entrada' ? row.quantidade + quantidade : row.quantidade - quantidade;
-    if (novaQtd < 0) return res.status(400).json({ error: 'Estoque insuficiente' });
-
-    db.run('UPDATE produtos SET quantidade=? WHERE id=?', [novaQtd, produto_id]);
-    db.run(
-      'INSERT INTO estoque_mov (produto_id, funcionario_id, tipo, quantidade, observacao) VALUES (?,?,?,?,?)',
-      [produto_id, funcionario_id || null, tipo, quantidade, observacao],
-      function (err2) {
-        if (err2) return res.status(500).json({ error: err2.message });
-        res.json({ id: this.lastID, nova_quantidade: novaQtd });
+  try {
+    const movimento = await db.transaction(async tx => {
+      const produto = await tx.get('SELECT quantidade, tipo, ativo FROM produtos WHERE id = ?', [id]);
+      if (!produto || !produto.ativo) {
+        const error = new Error('Produto não encontrado ou arquivado.');
+        error.status = 404;
+        throw error;
       }
-    );
-  });
+      if (produto.tipo !== 'produto') {
+        const error = new Error('Serviços não possuem saldo de estoque para movimentar.');
+        error.status = 400;
+        throw error;
+      }
+      if (tipo === 'saida' && produto.quantidade < qtd) {
+        const error = new Error(`Estoque insuficiente. Disponível: ${produto.quantidade}.`);
+        error.status = 409;
+        throw error;
+      }
+      const delta = tipo === 'entrada' ? qtd : -qtd;
+      await tx.run('UPDATE produtos SET quantidade = quantidade + ? WHERE id = ?', [delta, id]);
+      const registro = await tx.run(
+        'INSERT INTO estoque_mov (produto_id, funcionario_id, tipo, quantidade, observacao) VALUES (?, ?, ?, ?, ?)',
+        [id, funcionario_id || null, tipo, qtd, observacao || null]
+      );
+      return { id: registro.lastID, nova_quantidade: produto.quantidade + delta };
+    });
+    res.status(201).json(movimento);
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    console.error('Erro ao movimentar estoque:', err.message);
+    res.status(500).json({ error: 'Não foi possível registrar a movimentação do estoque.' });
+  }
 });
 
 module.exports = router;

@@ -34,6 +34,10 @@ O disco persistente requer um plano do Render compatível e mantém o SQLite ent
 
 Na tela **Configurações**, é possível enviar um PDF de referência para o modelo de Ordem de Serviço e outro para o modelo de Garantia. Os arquivos ficam no disco persistente, podem ser baixados ou excluídos pela própria tela e têm limite de 5 MB. Eles não alteram os documentos gerados automaticamente pelas ordens de serviço.
 
+### Estoque, ordens de serviço e imagens
+
+Vendas e peças registradas em uma OS movimentam o estoque automaticamente; cancelar ou excluir esses registros devolve as unidades ao estoque. O sistema impede saídas acima do saldo disponível. Produtos e ordens de serviço aceitam até cinco imagens PNG, JPEG ou WebP, de no máximo 5 MB cada. As imagens também são salvas no disco persistente do Render e são removidas quando o registro correspondente é excluído.
+
 ### Dados existentes
 
 O disco do Render começa vazio: o `backend/database.db` do computador não é enviado automaticamente. Faça uma cópia de segurança e transfira o banco para `/var/data/database.db` antes de usar o sistema com dados reais. Não publique o arquivo do banco no GitHub. Faça cópias de segurança periódicas do disco.

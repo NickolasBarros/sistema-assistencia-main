@@ -118,7 +118,7 @@
           </svg>
         </button>
         <button type="button" class="btn-configuracoes-topo" data-view-shortcut="configuracoes" title="Configurações da loja">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.8 1.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.1h-2.6v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1-1.8-1.8.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H6.3v-2.6h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1 1.8-1.8.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6v-.1H15v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1 1.8 1.8-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.1v2.6H21a1.7 1.7 0 0 0-1.6 1z"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8.25a3.75 3.75 0 1 0 0 7.5 3.75 3.75 0 0 0 0-7.5Z"/><path d="m19.4 15 .06.06a1.7 1.7 0 1 1-2.4 2.4l-.06-.06a1.7 1.7 0 0 0-2.9 1.2v.15a1.7 1.7 0 1 1-3.4 0v-.1a1.7 1.7 0 0 0-2.9-1.2l-.06.06a1.7 1.7 0 1 1-2.4-2.4l.06-.06a1.7 1.7 0 0 0-1.2-2.9h-.15a1.7 1.7 0 1 1 0-3.4h.1a1.7 1.7 0 0 0 1.2-2.9l-.06-.06a1.7 1.7 0 1 1 2.4-2.4l.06.06a1.7 1.7 0 0 0 2.9-1.2v-.15a1.7 1.7 0 1 1 3.4 0v.1a1.7 1.7 0 0 0 2.9 1.2l.06-.06a1.7 1.7 0 1 1 2.4 2.4l-.06.06a1.7 1.7 0 0 0 1.2 2.9h.15a1.7 1.7 0 1 1 0 3.4h-.1a1.7 1.7 0 0 0-1.2 2.9Z"/></svg>
           <span>Configurações</span>
         </button>
       </div>
@@ -255,6 +255,8 @@
           <input placeholder="IMEI (se aparelho)" id="produto-imei" />
           <input placeholder="Número de Série" id="produto-serie" />
           <select id="produto-funcionario"></select>
+          <label class="campo-imagem">Fotos do produto <input type="file" id="produto-imagem" accept="image/jpeg,image/png,image/webp" multiple /><small>Até 5 imagens · JPG, PNG ou WebP · até 5 MB cada</small></label>
+          <div id="produto-imagem-preview" class="imagem-preview" aria-live="polite"></div>
           <button type="submit">Salvar</button>
           <button type="button" id="cancel-produto" class="btn-secondary" style="display:none">Cancelar</button>
         </form>
@@ -270,7 +272,10 @@
         <h2>Nova OS</h2>
         <form id="form-ordem">
           <input type="hidden" id="ordem-id" />
-          <select id="ordem-cliente" required></select>
+          <div class="cliente-os-field">
+            <select id="ordem-cliente" required></select>
+            <button type="button" class="btn-cliente-rapido" onclick="abrirCadastroClienteRapido()">＋ Cliente</button>
+          </div>
           <select id="ordem-funcionario"></select>
           <input placeholder="Aparelho" id="ordem-aparelho" />
           <input placeholder="Marca" id="ordem-marca" />
@@ -278,9 +283,13 @@
           <input placeholder="IMEI" id="ordem-imei" />
           <input placeholder="Número de Série" id="ordem-serie" />
           <textarea placeholder="Defeito relatado" id="ordem-defeito"></textarea>
+          <label class="campo-imagem campo-imagem-os">Fotos do aparelho / defeito
+            <input type="file" id="ordem-imagens" accept="image/jpeg,image/png,image/webp" multiple />
+            <small>Até 5 imagens · JPG, PNG ou WebP · até 5 MB cada</small>
+          </label>
+          <div id="ordem-imagens-preview" class="imagem-preview ordem-imagens-preview" aria-live="polite"></div>
           <textarea placeholder="Serviço realizado" id="ordem-servico"></textarea>
           <textarea placeholder="Peças utilizadas" id="ordem-pecas"></textarea>
-          <div style="grid-column:1/-1; background:var(--cor-fundo-tabela-head); padding:12px; border-radius:8px; margin-top:8px;">
           <div style="grid-column:1/-1; background:var(--cor-fundo-tabela-head); padding:12px; border-radius:8px; margin-top:8px;">
             <strong style="display:block; font-size:13px; color:var(--cor-texto-suave); text-transform:uppercase; margin-bottom:8px;">Mão de Obra (Serviços Realizados)</strong>
 
@@ -298,6 +307,7 @@
             </div>
           </div>
 
+          <div style="grid-column:1/-1; background:var(--cor-fundo-tabela-head); padding:12px; border-radius:8px; margin-top:8px;">
             <strong style="display:block; font-size:13px; color:var(--cor-texto-suave); text-transform:uppercase; margin-bottom:8px;">Produtos Vendidos Junto</strong>
 
             <div style="display:grid; grid-template-columns:1fr 80px auto; gap:8px; margin-bottom:10px;">
@@ -746,6 +756,28 @@
       </div>
     </section>
   </main>
+
+  <div class="modal-overlay" id="modal-cliente-rapido">
+    <div class="modal-box cadastro-cliente-rapido" role="dialog" aria-modal="true" aria-labelledby="titulo-cliente-rapido">
+      <div class="cadastro-modal-heading">
+        <div>
+          <span class="eyebrow">NOVO ATENDIMENTO</span>
+          <h2 id="titulo-cliente-rapido">Cadastrar cliente</h2>
+        </div>
+        <button type="button" class="cadastro-modal-close" onclick="fecharCadastroClienteRapido()" aria-label="Fechar cadastro">×</button>
+      </div>
+      <p class="cliente-rapido-ajuda">O cliente será salvo na sua lista geral e ficará selecionado nesta OS.</p>
+      <form id="form-cliente-rapido">
+        <label>Nome <input id="cliente-rapido-nome" name="nome" required maxlength="120" autocomplete="name" /></label>
+        <label>Telefone <input id="cliente-rapido-telefone" name="telefone" maxlength="30" autocomplete="tel" /></label>
+        <label>E-mail <input id="cliente-rapido-email" name="email" type="email" maxlength="160" autocomplete="email" /></label>
+        <div class="cadastro-rapido-acoes">
+          <button type="button" class="btn-secondary" onclick="fecharCadastroClienteRapido()">Cancelar</button>
+          <button type="submit">Salvar e selecionar</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <div class="modal-overlay" id="modal-cliente">
     <div class="modal-box">

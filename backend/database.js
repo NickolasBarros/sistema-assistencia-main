@@ -8,6 +8,7 @@ if (databasePath !== ':memory:') {
 }
 
 const db = new sqlite3.Database(databasePath);
+db.configure('busyTimeout', 5000);
 
 function run(sql) {
   return new Promise((resolve, reject) => {
@@ -19,6 +20,46 @@ function all(sql, params = []) {
   return new Promise((resolve, reject) => {
     db.all(sql, params, (err, rows) => err ? reject(err) : resolve(rows));
   });
+}
+
+function runAsync(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.run(sql, params, function (err) {
+      if (err) return reject(err);
+      resolve({ lastID: this.lastID, changes: this.changes });
+    });
+  });
+}
+
+function getAsync(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.get(sql, params, (err, row) => err ? reject(err) : resolve(row));
+  });
+}
+
+function allAsync(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.all(sql, params, (err, rows) => err ? reject(err) : resolve(rows));
+  });
+}
+
+let transactionQueue = Promise.resolve();
+function transaction(work) {
+  const current = transactionQueue.then(async () => {
+    await runAsync('BEGIN IMMEDIATE');
+    try {
+      const result = await work({ run: runAsync, get: getAsync, all: allAsync });
+      await runAsync('COMMIT');
+      return result;
+    } catch (err) {
+      await runAsync('ROLLBACK').catch(rollbackError => {
+        console.error('Falha ao reverter transação SQLite:', rollbackError.message);
+      });
+      throw err;
+    }
+  });
+  transactionQueue = current.catch(() => {});
+  return current;
 }
 
 async function ensureColumn(table, column, definition) {
@@ -176,6 +217,14 @@ async function initialize() {
       nome_original TEXT NOT NULL,
       nome_arquivo TEXT NOT NULL UNIQUE,
       criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS midias (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      entidade_tipo TEXT NOT NULL CHECK (entidade_tipo IN ('produto', 'ordem')),
+      entidade_id INTEGER NOT NULL,
+      mime_type TEXT NOT NULL,
+      nome_arquivo TEXT NOT NULL UNIQUE,
+      criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
     )`
   ];
 
@@ -184,8 +233,13 @@ async function initialize() {
   await ensureColumn('ordens', 'mao_de_obra', "TEXT DEFAULT '[]'");
   await ensureColumn('ordens', 'produtos_vendidos', "TEXT DEFAULT '[]'");
   await ensureColumn('ordens', 'garantia_ate', 'DATETIME');
+  await ensureColumn('produtos', 'ativo', 'INTEGER NOT NULL DEFAULT 1');
 }
 
 db.ready = initialize();
+db.runAsync = runAsync;
+db.getAsync = getAsync;
+db.allAsync = allAsync;
+db.transaction = transaction;
 
 module.exports = db;

@@ -143,9 +143,11 @@ async function carregarSelectProdutosOS() {
     produtos.forEach(p => {
       const opt = document.createElement('option');
       opt.value = p.id;
-      opt.textContent = `${p.nome} — ${formatMoney(p.preco)}`;
+      opt.textContent = `${p.nome}${p.tipo === 'produto' ? ` · estoque ${p.quantidade}` : ''} — ${formatMoney(p.preco)}`;
       opt.dataset.preco = p.preco;
       opt.dataset.nome = p.nome;
+      opt.dataset.tipo = p.tipo;
+      opt.dataset.stock = p.quantidade;
       select.appendChild(opt);
     });
   } catch (err) {
@@ -160,13 +162,22 @@ function adicionarProdutoOS() {
   const qtd = parseInt(qtdInput.value) || 1;
 
   if (!select.value) return alert('Selecione um produto');
+  if (!Number.isInteger(qtd) || qtd < 1) return alert('Informe uma quantidade inteira maior que zero.');
 
   const preco = parseFloat(opt.dataset.preco) || 0;
   const nome = opt.dataset.nome;
+  if (opt.dataset.tipo === 'produto') {
+    const jaAdicionado = produtosOS
+      .filter(item => Number(item.id) === Number(select.value) && item.tipo === 'produto')
+      .reduce((total, item) => total + Number(item.quantidade), 0);
+    const disponivel = Number(opt.dataset.stock) - jaAdicionado;
+    if (qtd > disponivel) return alert(`Estoque insuficiente. Disponível para adicionar: ${disponivel}.`);
+  }
 
   produtosOS.push({
     id: parseInt(select.value),
     nome,
+    tipo: opt.dataset.tipo,
     preco,
     quantidade: qtd
   });
@@ -272,9 +283,16 @@ async function verOrdem(id) {
     <div class="info-linha"><strong>Data entrada</strong><span>${formatDate(o.data_entrada)}</span></div>
     <div class="info-linha"><strong>Data saída</strong><span>${formatDate(o.data_saida)}</span></div>
     <div class="info-linha"><strong>Garantia até</strong><span>${o.garantia_ate ? formatDate(o.garantia_ate) : '-'}</span></div>
+    <div class="info-linha"><strong>Fotos do aparelho</strong><span>Imagens registradas nesta OS</span></div>
+    <div class="os-fotos" id="detalhe-os-fotos"></div>
   `;
 
   abrirModalVer('Detalhes da OS', html);
+  try {
+    await carregarMidias('ordem', o.id, 'detalhe-os-fotos');
+  } catch (err) {
+    console.error('Erro ao carregar fotos da OS:', err);
+  }
 }
 
 // ============================================
@@ -299,6 +317,7 @@ async function editarOrdem(id) {
   document.getElementById('ordem-defeito').value = o.defeito || '';
   document.getElementById('ordem-servico').value = o.servico_realizado || '';
   document.getElementById('ordem-pecas').value = o.pecas_utilizadas || '';
+  document.getElementById('ordem-imagens').value = '';
   document.getElementById('ordem-status').value = o.status || 'Aberta';
 
   try { maoDeObraOS = JSON.parse(o.mao_de_obra || '[]'); } catch (e) { maoDeObraOS = []; }
@@ -325,6 +344,11 @@ async function editarOrdem(id) {
   document.getElementById('pagamentos-os-section').style.display = 'block';
   document.getElementById('pagamento-os-id').textContent = o.id;
   await atualizarPagamentosOS();
+  try {
+    await carregarMidias('ordem', o.id, 'ordem-imagens-preview', true);
+  } catch (err) {
+    alert('Não foi possível carregar as fotos da OS: ' + err.message);
+  }
   abrirFormularioCadastro('form-ordem', 'Editar Ordem de Serviço');
 }
 
@@ -384,13 +408,28 @@ async function atualizarPagamentosOS() {
 async function excluirPagamento(ordemId, pagamentoId) {
   if (!confirm('Excluir este pagamento? O valor será removido do Caixa e do Financeiro.')) return;
   await apiDelete(`/ordens/${ordemId}/pagamento/${pagamentoId}`);
-  await atualizarPagamentosOS();
+  const atualizacoes = await Promise.allSettled([
+    atualizarPagamentosOS(),
+    carregarCaixa(),
+    carregarFinanceiro(),
+    carregarDashboard()
+  ]);
+  const falha = atualizacoes.find(resultado => resultado.status === 'rejected');
+  if (falha) alert('Pagamento excluído, mas alguns painéis não puderam ser atualizados: ' + (falha.reason?.message || falha.reason));
 }
 
 async function excluirOrdem(id) {
   if (!confirm('Excluir OS? Todos os pagamentos relacionados também serão removidos.')) return;
   await apiDelete('/ordens/' + id);
-  carregarOrdens();
+  const atualizacoes = await Promise.allSettled([
+    carregarOrdens(),
+    carregarProdutos(),
+    carregarCaixa(),
+    carregarFinanceiro(),
+    carregarDashboard()
+  ]);
+  const falha = atualizacoes.find(resultado => resultado.status === 'rejected');
+  if (falha) alert('OS excluída, mas alguns painéis não puderam ser atualizados: ' + (falha.reason?.message || falha.reason));
 }
 
 // ============================================
@@ -1057,8 +1096,24 @@ document.addEventListener('DOMContentLoaded', () => {
         data_saida: document.getElementById('ordem-data-saida').value || null
       };
 
-      if (id) await apiPut('/ordens/' + id, dados);
-      else await apiPost('/ordens', dados);
+      const imagens = Array.from(document.getElementById('ordem-imagens').files);
+      try {
+        let ordemId = Number(id);
+        validarArquivosImagem(imagens);
+        const imagensExistentes = id ? await apiGet(`/midias/entidade/ordem/${id}`) : [];
+        if (imagensExistentes.length + imagens.length > 5) throw new Error('Uma OS pode ter no máximo 5 imagens. Remova fotos antigas antes de adicionar novas.');
+        if (id) await apiPut('/ordens/' + id, dados);
+        else {
+          const criada = await apiPost('/ordens', dados);
+          ordemId = criada.id;
+          document.getElementById('ordem-id').value = ordemId;
+        }
+
+        for (const imagem of imagens) await apiUpload(`/midias/ordem/${ordemId}`, imagem);
+      } catch (err) {
+        alert('Não foi possível salvar a OS ou suas imagens: ' + err.message);
+        return;
+      }
 
       form.reset();
       maoDeObraOS = [];
@@ -1069,13 +1124,35 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('ordem-data-saida').value = '';
       document.getElementById('cancel-ordem').style.display = 'none';
       document.getElementById('pagamentos-os-section').style.display = 'none';
+      document.getElementById('ordem-imagens-preview').replaceChildren();
+      document.getElementById('ordem-imagens').value = '';
       osAtual = null;
-      carregarOrdens();
+      const atualizacoes = await Promise.allSettled([
+        carregarOrdens(),
+        carregarProdutos(),
+        carregarDashboard()
+      ]);
+      const falha = atualizacoes.find(resultado => resultado.status === 'rejected');
+      if (falha) alert('OS salva, mas alguns painéis não puderam ser atualizados: ' + (falha.reason?.message || falha.reason));
     });
 
     carregarSelectProdutosOS();
     renderMaoDeObra();
     renderProdutosOS();
+    document.getElementById('ordem-imagens')?.addEventListener('change', async () => {
+      const input = document.getElementById('ordem-imagens');
+      try {
+        validarArquivosImagem(Array.from(input.files));
+        const ordemId = document.getElementById('ordem-id').value;
+        const existentes = ordemId ? await apiGet(`/midias/entidade/ordem/${ordemId}`) : [];
+        if (existentes.length + input.files.length > 5) throw new Error('Uma OS pode ter no máximo 5 imagens.');
+        previewArquivosImagem(input, 'ordem-imagens-preview');
+      } catch (err) {
+        input.value = '';
+        previewArquivosImagem(input, 'ordem-imagens-preview');
+        alert(err.message);
+      }
+    });
 
     const btnCancel = document.getElementById('cancel-ordem');
     if (btnCancel) {
@@ -1089,6 +1166,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('ordem-data-saida').value = '';
         document.getElementById('cancel-ordem').style.display = 'none';
         document.getElementById('pagamentos-os-section').style.display = 'none';
+        document.getElementById('ordem-imagens-preview').replaceChildren();
+        document.getElementById('ordem-imagens').value = '';
         osAtual = null;
       });
     }
@@ -1112,10 +1191,22 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      await apiPost(`/ordens/${osAtual}/pagamento`, dados);
+      try {
+        await apiPost(`/ordens/${osAtual}/pagamento`, dados);
+      } catch (err) {
+        alert('Não foi possível registrar o pagamento: ' + err.message);
+        return;
+      }
       formPgto.reset();
-      await atualizarPagamentosOS();
-      carregarOrdens();
+      const atualizacoes = await Promise.allSettled([
+        atualizarPagamentosOS(),
+        carregarOrdens(),
+        carregarCaixa(),
+        carregarFinanceiro(),
+        carregarDashboard()
+      ]);
+      const falha = atualizacoes.find(resultado => resultado.status === 'rejected');
+      if (falha) alert('Pagamento registrado, mas alguns painéis não puderam ser atualizados: ' + (falha.reason?.message || falha.reason));
     });
   }
 
@@ -1126,7 +1217,4 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') fecharModalEnvio();
-  });
 });

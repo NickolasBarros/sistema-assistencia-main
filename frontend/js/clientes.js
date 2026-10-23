@@ -4,6 +4,21 @@
 
 let clienteModalAtual = null;
 
+function abrirCadastroClienteRapido() {
+  const modal = document.getElementById('modal-cliente-rapido');
+  const form = document.getElementById('form-cliente-rapido');
+  form.reset();
+  modal.classList.add('active');
+  document.body.classList.add('modal-aberto');
+  document.getElementById('cliente-rapido-nome').focus();
+}
+
+function fecharCadastroClienteRapido() {
+  const modal = document.getElementById('modal-cliente-rapido');
+  modal.classList.remove('active');
+  if (!document.querySelector('.modal-overlay.active')) document.body.classList.remove('modal-aberto');
+}
+
 async function carregarClientes() {
   const lista = await apiGet('/clientes');
   const tbody = document.querySelector('#tabela-clientes tbody');
@@ -70,8 +85,12 @@ async function editarCliente(id) {
 
 async function excluirCliente(id) {
   if (!confirm('Tem certeza que deseja excluir este cliente?')) return;
-  await apiDelete('/clientes/' + id);
-  carregarClientes();
+  try {
+    await apiDelete('/clientes/' + id);
+    await carregarClientes();
+  } catch (err) {
+    alert(err.message);
+  }
 }
 
 async function atualizarSelectsClientes() {
@@ -93,6 +112,38 @@ async function atualizarSelectsClientes() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  const formClienteRapido = document.getElementById('form-cliente-rapido');
+  if (formClienteRapido) {
+    formClienteRapido.addEventListener('submit', async event => {
+      event.preventDefault();
+      const dados = {
+        nome: document.getElementById('cliente-rapido-nome').value.trim(),
+        telefone: document.getElementById('cliente-rapido-telefone').value.trim(),
+        email: document.getElementById('cliente-rapido-email').value.trim()
+      };
+      const botao = formClienteRapido.querySelector('button[type="submit"]');
+      botao.disabled = true;
+      try {
+        const cliente = await apiPost('/clientes', dados);
+        await atualizarSelectsClientes();
+        document.getElementById('ordem-cliente').value = String(cliente.id);
+        await carregarClientes();
+        fecharCadastroClienteRapido();
+      } catch (err) {
+        alert('Não foi possível cadastrar o cliente: ' + err.message);
+      } finally {
+        botao.disabled = false;
+      }
+    });
+  }
+
+  const modalRapido = document.getElementById('modal-cliente-rapido');
+  if (modalRapido) {
+    modalRapido.addEventListener('click', event => {
+      if (event.target === modalRapido) fecharCadastroClienteRapido();
+    });
+  }
+
   const form = document.getElementById('form-cliente');
   if (form) {
     form.addEventListener('submit', async (e) => {
@@ -139,7 +190,4 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') fecharModalCliente();
-  });
 });

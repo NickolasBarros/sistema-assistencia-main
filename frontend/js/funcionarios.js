@@ -53,8 +53,12 @@ async function editarFuncionario(id) {
 
 async function excluirFuncionario(id) {
   if (!confirm('Excluir funcionário?')) return;
-  await apiDelete('/funcionarios/' + id);
-  carregarFuncionarios();
+  try {
+    await apiDelete('/funcionarios/' + id);
+    await carregarFuncionarios();
+  } catch (err) {
+    alert(err.message);
+  }
 }
 
 async function atualizarSelectsFuncionarios() {
@@ -88,15 +92,23 @@ document.addEventListener('DOMContentLoaded', () => {
       telefone: document.getElementById('funcionario-telefone').value
     };
 
-    if (editandoId) {
-      await apiPut('/funcionarios/' + editandoId, dados);
-      delete form.dataset.editandoId;
-      form.querySelector('button[type="submit"]').textContent = 'Salvar';
-    } else {
-      await apiPost('/funcionarios', dados);
-    }
+    const submit = form.querySelector('button[type="submit"]');
+    submit.disabled = true;
+    try {
+      if (editandoId) {
+        await apiPut('/funcionarios/' + editandoId, dados);
+        delete form.dataset.editandoId;
+        submit.textContent = 'Salvar';
+      } else {
+        await apiPost('/funcionarios', dados);
+      }
 
-    form.reset();
-    carregarFuncionarios();
+      form.reset();
+      await carregarFuncionarios();
+    } catch (err) {
+      alert('Não foi possível salvar o funcionário: ' + err.message);
+    } finally {
+      submit.disabled = false;
+    }
   });
 });

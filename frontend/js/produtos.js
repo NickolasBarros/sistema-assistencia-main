@@ -10,7 +10,7 @@ async function carregarProdutos() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${p.id}</td>
-      <td>${p.nome}</td>
+      <td>${p.imagem_id ? `<img class="produto-miniatura" src="/api/midias/${p.imagem_id}/arquivo" alt="" loading="lazy">` : ''}${p.nome}</td>
       <td>${p.tipo}</td>
       <td>${formatMoney(p.preco)}</td>
       <td>${p.quantidade}</td>
@@ -31,6 +31,7 @@ async function verProduto(id) {
   if (!p) return;
 
   const html = `
+    <div class="os-fotos" id="detalhe-produto-fotos"></div>
     <div class="info-linha"><strong>ID</strong><span>${p.id}</span></div>
     <div class="info-linha"><strong>Nome</strong><span>${p.nome || '-'}</span></div>
     <div class="info-linha"><strong>Tipo</strong><span>${p.tipo || '-'}</span></div>
@@ -45,6 +46,11 @@ async function verProduto(id) {
   `;
 
   abrirModalVer('Detalhes do Produto/Serviço', html);
+  try {
+    await carregarMidias('produto', p.id, 'detalhe-produto-fotos');
+  } catch (err) {
+    console.error('Erro ao carregar imagens do produto:', err);
+  }
 }
 
 async function editarProduto(id) {
@@ -61,14 +67,25 @@ async function editarProduto(id) {
   document.getElementById('produto-imei').value = p.imei || '';
   document.getElementById('produto-serie').value = p.numero_serie || '';
   document.getElementById('produto-funcionario').value = p.funcionario_id || '';
+  document.getElementById('produto-imagem').value = '';
+  try {
+    await carregarMidias('produto', p.id, 'produto-imagem-preview', true);
+  } catch (err) {
+    alert('Não foi possível carregar as fotos do produto: ' + err.message);
+    return;
+  }
   document.getElementById('cancel-produto').style.display = 'inline-block';
   abrirFormularioCadastro('form-produto', 'Editar Produto / Serviço');
 }
 
 async function excluirProduto(id) {
   if (!confirm('Excluir produto/serviço?')) return;
-  await apiDelete('/produtos/' + id);
-  carregarProdutos();
+  try {
+    await apiDelete('/produtos/' + id);
+    await carregarProdutos();
+  } catch (err) {
+    alert(err.message);
+  }
 }
 
 async function atualizarSelectsProdutos() {
@@ -91,10 +108,11 @@ async function atualizarSelectsProdutos() {
     lista.forEach(p => {
       const opt = document.createElement('option');
       opt.value = p.id;
-      opt.textContent = `${p.nome} - ${formatMoney(p.preco)}`;
+      opt.textContent = `${p.nome}${p.tipo === 'produto' ? ` (Estoque: ${p.quantidade})` : ''} - ${formatMoney(p.preco)}`;
       opt.dataset.preco = p.preco;
       opt.dataset.nome = p.nome;
       opt.dataset.tipo = p.tipo;
+      opt.dataset.stock = p.quantidade;
       s2.appendChild(opt);
     });
   }
@@ -107,6 +125,10 @@ document.addEventListener('DOMContentLoaded', () => {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const id = document.getElementById('produto-id').value;
+    const imagens = Array.from(document.getElementById('produto-imagem').files);
+    if (imagens.length > 5) return alert('Cada produto pode ter até 5 imagens.');
+    try { validarArquivosImagem(imagens); }
+    catch (err) { return alert(err.message); }
     const dados = {
       nome: document.getElementById('produto-nome').value,
       tipo: document.getElementById('produto-tipo').value,
@@ -119,13 +141,36 @@ document.addEventListener('DOMContentLoaded', () => {
       funcionario_id: parseInt(document.getElementById('produto-funcionario').value) || null
     };
 
-    if (id) await apiPut('/produtos/' + id, dados);
-    else await apiPost('/produtos', dados);
+    const submit = form.querySelector('button[type="submit"]');
+    submit.disabled = true;
+    try {
+      let produtoId = Number(id);
+      const imagensExistentes = id ? await apiGet(`/midias/entidade/produto/${id}`) : [];
+      if (imagensExistentes.length + imagens.length > 5) throw new Error('Um produto pode ter no máximo 5 imagens. Remova fotos antigas antes de adicionar novas.');
+      if (id) await apiPut('/produtos/' + id, dados);
+      else {
+        const criado = await apiPost('/produtos', dados);
+        produtoId = criado.id;
+        document.getElementById('produto-id').value = String(produtoId);
+      }
 
-    form.reset();
-    document.getElementById('produto-id').value = '';
-    document.getElementById('cancel-produto').style.display = 'none';
-    carregarProdutos();
+      for (const imagem of imagens) await apiUpload(`/midias/produto/${produtoId}`, imagem);
+
+      form.reset();
+      document.getElementById('produto-id').value = '';
+      document.getElementById('cancel-produto').style.display = 'none';
+      document.getElementById('produto-imagem-preview').replaceChildren();
+    } catch (err) {
+      alert('Não foi possível salvar o produto ou suas imagens: ' + err.message);
+      return;
+    } finally {
+      submit.disabled = false;
+    }
+    try {
+      await carregarProdutos();
+    } catch (err) {
+      alert('Produto salvo, mas a lista não pôde ser atualizada: ' + err.message);
+    }
   });
 
   const btnCancel = document.getElementById('cancel-produto');
@@ -134,6 +179,23 @@ document.addEventListener('DOMContentLoaded', () => {
       form.reset();
       document.getElementById('produto-id').value = '';
       btnCancel.style.display = 'none';
+      document.getElementById('produto-imagem-preview').replaceChildren();
     });
   }
+
+  document.getElementById('produto-imagem')?.addEventListener('change', async () => {
+    const input = document.getElementById('produto-imagem');
+    const imagens = Array.from(input.files);
+    try {
+      validarArquivosImagem(imagens);
+      const id = document.getElementById('produto-id').value;
+      const existentes = id ? await apiGet(`/midias/entidade/produto/${id}`) : [];
+      if (existentes.length + imagens.length > 5) throw new Error('Um produto pode ter no máximo 5 imagens.');
+      previewArquivosImagem(input, 'produto-imagem-preview');
+    } catch (err) {
+      input.value = '';
+      previewArquivosImagem(input, 'produto-imagem-preview');
+      alert(err.message);
+    }
+  });
 });
