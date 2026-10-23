@@ -221,7 +221,7 @@ async function provisionTenant({ nome, ownerName, email, passwordHash, passwordS
     await client.query(`CREATE SCHEMA ${quoteSchema(schema)}`);
     await initializeTenantSchema(client, schema);
     await client.query(
-      `INSERT INTO public.tenant_users (tenant_id, nome, email, password_hash, password_salt, role)
+      `INSERT INTO public.tenant_users (tenant_id, nome, email, password_hash, password_salt, role, ativo)
        VALUES ($1, $2, $3, $4, $5, 'owner', TRUE)`,
       [tenant.rows[0].id, ownerName, email.toLowerCase(), passwordHash, passwordSalt]
     );
